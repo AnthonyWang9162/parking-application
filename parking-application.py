@@ -6,15 +6,15 @@ from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
 
-# 連接到資料庫
-conn = sqlite3.connect(r'C:\Users\504492\Desktop\parking_lot.db')
+# 建立資料庫連接
+conn = sqlite3.connect('parking_lot.db')
 cursor = conn.cursor()
 
-# Google Drive API 認證
+# 設置 Google Drive API 憑證
 SCOPES = ['https://www.googleapis.com/auth/drive.file']
-SERVICE_ACCOUNT_FILE = r'C:\Users\504492\Desktop\credentials.json'  # 替換為您的憑證文件路徑
-creds = service_account.Credentials.from_service_account_file(
-    SERVICE_ACCOUNT_FILE, scopes=SCOPES)
+# 使用 Streamlit Secret 管理 Google Drive 憑證
+SERVICE_ACCOUNT_INFO = st.secrets["gdrive_service_account"]
+creds = service_account.Credentials.from_service_account_info(SERVICE_ACCOUNT_INFO, scopes=SCOPES)
 drive_service = build('drive', 'v3', credentials=creds)
 
 # 上傳檔案到指定的 Google 雲端硬碟資料夾
@@ -28,7 +28,7 @@ def upload_to_drive(file_path, filename, folder_id):
     return file.get('id')
 
 # 設置資料夾 ID
-folder_id = '15EizQ53vML7qcxJISBCIBX5sYMBomfIX'  # 替換為您的 Google Drive 資料夾 ID
+folder_id = st.secrets["folder_id"]  # 將資料夾 ID 放在 secrets 中
 
 # 建立Streamlit表單
 def main():
@@ -90,35 +90,37 @@ def main():
                 #代表新申請人有資料異動
                 if waiting_data:
                     for proof_file in proof_files:
-                        # 將文件保存到本地
+                        # 將文件保存到暫存區
                         with open(proof_file.name, "wb") as f:
                             f.write(proof_file.getbuffer())
                         filename = f"{name}_{proof_file.name}"
                         upload_to_drive(proof_file.name, filename, folder_id)
                         os.remove(proof_file.name)  # 上傳後刪除本地文件
-                    cursor.execute("UPDATE 審核停車申請表 SET 單位=?,姓名=?,聯絡電話=? ,證明文件照片檔 = ? WHERE 員工編號 = ? AND 車號 = ? AND 申請身份 = ?", (unit,name,contact_info,proof_data,employee_id, car_number, special_needs))
+                    cursor.execute("UPDATE 審核停車申請表 SET 單位=?,姓名=?,聯絡電話=? WHERE 員工編號 = ? AND 車號 = ? AND 申請身份 = ?", (unit,name,contact_info,employee_id, car_number, special_needs))
                     conn.commit()
                     cursor.close()
                     st.success('車位申請修改成功！')
-                # 將填寫的資料插入到資料庫
                 else:
+                    # 新增新的申請資料
                     insert_data(unit, name, car_number, employee_id , special_needs, proof_files, contact_info)
                     st.success('車位第一次申請成功！')
 
 # 將填寫的資料插入到資料庫
 def insert_data(unit, name, car_number, employee_id , special_needs, proof_files, contact_info):
+    proof_data_list = []
     for proof_file in proof_files:
-        # 將文件保存到本地
+        # 將文件保存到暫存區
         with open(proof_file.name, "wb") as f:
             f.write(proof_file.getbuffer())
         filename = f"{name}_{proof_file.name}"
         upload_to_drive(proof_file.name, filename, folder_id)
         os.remove(proof_file.name)  # 上傳後刪除本地文件
-        proof_data = proof_file.read()
+        proof_data_list.append(proof_file.read())
+    proof_data = ','.join(proof_data_list)  # 合併多個證明文件資料
     cursor.execute('''
     INSERT INTO 審核停車申請表 (員工編號,單位,姓名,車號,聯絡電話,申請身份,證明文件照片檔)
     VALUES (?,?,?,?,?,?,?)
-    ''', (employee_id,unit, name, car_number,contact_info,special_needs, proof_data))
+    ''', (employee_id, unit, name, car_number, contact_info, special_needs, proof_data))
     conn.commit()
     cursor.close()
 
