@@ -150,21 +150,24 @@ with tab1:
 
     # 當 '通過' 或 '不通過' 欄位改變時更新資料庫
     if st.button('審核確認'):
-        for index, row in edited_df1.iterrows():
-            if row['通過'] and row['不通過']:
-                st.error("欄位有誤，請調整後再試")
-            # 如果 '通過' 欄位為 True 且原本的值為 False，更新為車牌綁定 = True
-            elif row['通過'] :
-                update_record(row['期別'], row['姓名代號'], True)
-                if new_approved_car_record(row['姓名代號'], row['車牌號碼']):
-                    insert_car_approved_record(row['姓名代號'], row['車牌號碼'])
+        try:
+            for index, row in edited_df1.iterrows():
+                if row['通過'] and row['不通過']:
+                    st.error("欄位有誤，請調整後再試")
+                # 如果 '通過' 欄位為 True 且原本的值為 False，更新為車牌綁定 = True
+                elif row['通過'] :
+                    update_record(row['期別'], row['姓名代號'], True)
+                    if new_approved_car_record(row['姓名代號'], row['車牌號碼']):
+                        insert_car_approved_record(row['姓名代號'], row['車牌號碼'])
+                        st.success("審核完成")
+                    else:
+                        st.success("審核完成")
+                # 如果 '不通過' 欄位為 True 且原本的值為 False，更新為車牌綁定 = False
+                elif row['不通過'] :
+                    delete_record(row['期別'], row['姓名代號'])
                     st.success("審核完成")
-                else:
-                    st.success("審核完成")
-            # 如果 '不通過' 欄位為 True 且原本的值為 False，更新為車牌綁定 = False
-            elif row['不通過'] :
-                delete_record(row['期別'], row['姓名代號'])
-                st.success("審核完成")
+        finally:
+            upload_db(local_db_path, db_file_id)
 
 with tab2:
     st.header("本期停車申請一覽表")
@@ -172,10 +175,13 @@ with tab2:
     df2['刪除資料'] = False
     edited_df2 = st.data_editor(df2)
     if st.button('刪除確認'):
-        for index, row in edited_df2.iterrows():
-            if row['刪除資料'] and not df2.loc[index, '刪除資料']:
-                delete_record(row['期別'], row['姓名代號'])
-                st.success("資料刪除成功")
+        try:
+            for index, row in edited_df2.iterrows():
+                if row['刪除資料'] and not df2.loc[index, '刪除資料']:
+                    delete_record(row['期別'], row['姓名代號'])
+                    st.success("資料刪除成功")
+        finally:
+            upload_db(local_db_path, db_file_id)
 
 with tab3:
     st.header("新增資料")
@@ -191,3 +197,4 @@ with tab3:
                 st.success("資料新增成功")
             except:
                 st.error("已成功將資料新增至資料表中")
+
