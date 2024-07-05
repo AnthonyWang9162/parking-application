@@ -1,30 +1,20 @@
 import streamlit as st
-from filelock import FileLock
-import time
+import pandas as pd
 
-# 鎖文件的路徑
-lockfile_path = "/tmp/operation.lock"
+# 建立範例資料
+data = {
+    'Name': ['Alice', 'Bob', 'Charlie'],
+    'Age': [30, 25, 35],
+    'City': ['New York', 'San Francisco', 'Los Angeles']
+}
+df = pd.DataFrame(data)
 
-def perform_operation():
-    lock = FileLock(lockfile_path)
-    try:
-        lock.acquire(timeout=1)
-        st.write("執行提交表單後的操作...")
-        time.sleep(5)  # 模擬操作的耗時
-        st.success("操作完成!")
-        return True
-    except TimeoutError:
-        st.warning("有操作正在進行，請稍後再試。")
-        return False
-    finally:
-        if lock.is_locked:
-            lock.release()
+# 使用st.experimental_data_editor顯示和編輯資料
+st.title('Data Editor Example')
+st.write('Use the data editor to view and edit the data.')
 
-def main():
-    st.title("表單提交範例")
+edited_df = st.experimental_data_editor(df)
 
-    if st.button("提交表單"):
-        perform_operation()
-
-if __name__ == "__main__":
-    main()
+# 顯示編輯後的資料
+st.write('Edited Data:')
+st.write(edited_df)
