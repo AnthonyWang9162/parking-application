@@ -17,13 +17,13 @@ creds = Credentials.from_service_account_info(st.secrets["google_drive"])
 service = build('drive', 'v3', credentials=creds)
 
 # 下载和上传 SQLite 数据库文件的函数
-@st.cache_data
+
 def connect_db():
     local_db_path = '/tmp/test.db'
     conn = sqlite3.connect(local_db_path)
     return conn
     
-
+@st.cache_data
 def download_db(file_id, destination):
     request = service.files().get_media(fileId=file_id)
     fh = io.FileIO(destination, 'wb')
@@ -32,7 +32,7 @@ def download_db(file_id, destination):
     while not done:
         status, done = downloader.next_chunk()
         
-
+@st.cache_data
 def upload_db(source, file_id):
     file_metadata = {'name': 'test.db'}
     media = MediaFileUpload(source, mimetype='application/x-sqlite3')
