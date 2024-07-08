@@ -148,7 +148,7 @@ with tab1:
     df1 = load_data1()
     df1['通過'] = False
     df1['不通過'] = False
-    edited_df1 = st.data_editor(df1, disabled=df1.columns[df1.columns != '通過' ], disabled=df1.columns[df1.columns != '不通過'])
+    edited_df1 = st.data_editor(df1, disabled=df1.columns[df1.columns != ('通過','不通過')])
     if st.button('審核確認'):
         try:
             for index, row in edited_df1.iterrows():
