@@ -23,7 +23,7 @@ def connect_db():
     conn = sqlite3.connect(local_db_path)
     return conn
     
-@st.cache_resource    
+@st.cache_resource(ttl=60, show_spinner="正在加載資料...")   
 def download_db(file_id, destination):
     request = service.files().get_media(fileId=file_id)
     fh = io.FileIO(destination, 'wb')
