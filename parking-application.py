@@ -49,7 +49,8 @@ def connect_db():
     local_db_path = '/tmp/test.db'
     return sqlite3.connect(local_db_path)
 
-# 讀取申請紀錄表
+# 讀取申請紀錄表，使用快取提高性能
+@st.cache_data
 def load_data1():
     conn = connect_db()
     query = "SELECT * FROM 申請紀錄 WHERE 車牌綁定 = 0"
@@ -57,7 +58,7 @@ def load_data1():
     conn.close()
     return df
 
-# 讀取申請紀錄表
+@st.cache_data
 def load_data2(current):
     conn = connect_db()
     query = "SELECT * FROM 申請紀錄 WHERE 期別 = ?"
@@ -152,21 +153,30 @@ with tab1:
     # 當 '通過' 或 '不通過' 欄位改變時更新資料庫
     if st.button('審核確認'):
         try:
+            # 儲存變更
+            changes = []
             for index, row in edited_df1.iterrows():
                 if row['通過'] and row['不通過']:
                     st.error("欄位有誤，請調整後再試")
-                # 如果 '通過' 欄位為 True 且原本的值為 False，更新為車牌綁定 = True
                 elif row['通過']:
-                    update_record(row['期別'], row['姓名代號'], True)
+                    changes.append((row['期別'], row['姓名代號'], True))
                     if new_approved_car_record(row['姓名代號'], row['車牌號碼']):
                         insert_car_approved_record(row['姓名代號'], row['車牌號碼'])
-                        st.success("審核完成")
-                    else:
-                        st.success("審核完成")
-                # 如果 '不通過' 欄位為 True 且原本的值為 False，刪除記錄
                 elif row['不通過']:
-                    delete_record(row['期別'], row['姓名代號'])
-                    st.success("審核完成")
+                    changes.append((row['期別'], row['姓名代號']))
+
+            # 批次更新資料庫
+            with connect_db() as conn:
+                cursor = conn.cursor()
+                for period, name_code, plate_binding in changes:
+                    if plate_binding is not None:
+                        update_record(period, name_code, plate_binding)
+                    else:
+                        delete_record(period, name_code)
+                conn.commit()
+            st.success("審核完成")
+        except Exception as e:
+            st.error(f"審核過程中發生錯誤: {e}")
         finally:
             upload_db(local_db_path, db_file_id)
 
@@ -177,26 +187,36 @@ with tab2:
     edited_df2 = st.data_editor(df2)
     if st.button('刪除確認'):
         try:
-            for index, row in edited_df2.iterrows():
-                if row['刪除資料'] and not df2.loc[index, '刪除資料']:
-                    delete_record(row['期別'], row['姓名代號'])
-                    st.success("資料刪除成功")
+            # 批次刪除記錄
+            with connect_db() as conn:
+                cursor = conn.cursor()
+                for index, row in edited_df2.iterrows():
+                    if row['刪除資料']:
+                        delete_record(row['期別'], row['姓名代號'])
+                conn.commit()
+            st.success("資料刪除成功")
+        except Exception as e:
+            st.error(f"刪除過程中發生錯誤: {e}")
         finally:
             upload_db(local_db_path, db_file_id)
 
 with tab3:
     st.header("新增資料")
-    columns = ['單位', '姓名代號', '姓名', '車牌號碼', '身分註記', '聯絡電話']
+    columns = ['單位','姓名代號','姓名','車牌號碼','身分註記','聯絡電話']
     options = ["一般", "孕婦", "身心障礙"]
     df3 = pd.DataFrame(columns=columns)
     # 顯示空白的 DataFrame
-    edited_df3 = st.data_editor(df3, num_rows="dynamic", column_config={"身分註記": st.column_config.SelectboxColumn("身分註記", options=options, help="選擇一個類別", required=True)})
+    edited_df3 = st.data_editor(df3, num_rows="dynamic", column_config={"身分註記": st.column_config.SelectboxColumn("身分註記", options=options, help="Select a category", required=True)})
     if st.button('新增確認'):
         try:
-            for index, row in edited_df3.iterrows():
-                insert_record(row['單位'], row['姓名'], row['車牌號碼'], row['姓名代號'], row['身分註記'], row['聯絡電話'], False, current)
+            # 批次新增記錄
+            with connect_db() as conn:
+                cursor = conn.cursor()
+                for index, row in edited_df3.iterrows():
+                    insert_record(row['單位'], row['姓名'], row['車牌號碼'], row['姓名代號'], row['身分註記'], row['聯絡電話'], False, current)
+                conn.commit()
             st.success("資料新增成功")
         except Exception as e:
-            st.error(f"新增失敗: {e}")
+            st.error(f"新增過程中發生錯誤: {e}")
         finally:
             upload_db(local_db_path, db_file_id)
