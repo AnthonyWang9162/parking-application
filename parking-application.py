@@ -16,7 +16,6 @@ creds = Credentials.from_service_account_info(st.secrets["google_drive"])
 # 连接到 Google Drive API
 service = build('drive', 'v3', credentials=creds)
 
-@st.cache_data
 def download_db(file_id, destination):
     request = service.files().get_media(fileId=file_id)
     fh = io.FileIO(destination, 'wb')
@@ -25,7 +24,6 @@ def download_db(file_id, destination):
     while not done:
         status, done = downloader.next_chunk()
 
-@st.cache_resource
 def upload_db(source, file_id):
     file_metadata = {'name': 'test.db'}
     media = MediaFileUpload(source, mimetype='application/x-sqlite3')
