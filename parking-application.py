@@ -7,6 +7,9 @@ from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseDownload, MediaFileUpload
 import io
 
+# 设置 Streamlit 页面配置
+st.set_page_config(layout="wide")
+
 # 设置 Google Drive API 凭据
 creds = Credentials.from_service_account_info(st.secrets["google_drive"])
 
@@ -134,8 +137,6 @@ db_file_id = '1_TArAUZyzzZuLX3y320VpytfBlaoUGBB'
 local_db_path = '/tmp/test.db'
 download_db(db_file_id, local_db_path)
 
-# 设置 Streamlit 页面配置
-st.set_page_config(layout="wide")
 st.title("停車申請管理系統")
 
 # 创建选项卡
