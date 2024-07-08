@@ -13,7 +13,7 @@ creds = Credentials.from_service_account_info(st.secrets["google_drive"])
 # 连接到 Google Drive API
 service = build('drive', 'v3', credentials=creds)
 
-# 下载和上传 SQLite 数据库文件的函数
+@st.cache_data
 def download_db(file_id, destination):
     request = service.files().get_media(fileId=file_id)
     fh = io.FileIO(destination, 'wb')
@@ -22,6 +22,7 @@ def download_db(file_id, destination):
     while not done:
         status, done = downloader.next_chunk()
 
+@st.cache_resource
 def upload_db(source, file_id):
     file_metadata = {'name': 'test.db'}
     media = MediaFileUpload(source, mimetype='application/x-sqlite3')
@@ -44,12 +45,12 @@ def get_quarter(year, month):
         raise ValueError("Month must be between 1 and 12")
     return year, quarter
 
-# 连接到 SQLite 数据库
+@st.cache_resource
 def connect_db():
     local_db_path = '/tmp/test.db'
     return sqlite3.connect(local_db_path)
 
-# 读取申请记录表
+@st.cache_data
 def load_data1():
     conn = connect_db()
     query = "SELECT * FROM 申請紀錄 WHERE 車牌綁定 = 0"
@@ -57,7 +58,7 @@ def load_data1():
     conn.close()
     return df
 
-# 读取当前季度的申请记录表
+@st.cache_data
 def load_data2(current):
     conn = connect_db()
     query = "SELECT * FROM 申請紀錄 WHERE 期別 = ?"
@@ -65,7 +66,6 @@ def load_data2(current):
     conn.close()
     return df
 
-# 更新数据库中的记录
 def update_record(period, name_code, plate_binding):
     conn = connect_db()
     cursor = conn.cursor()
@@ -78,7 +78,6 @@ def update_record(period, name_code, plate_binding):
     conn.commit()
     conn.close()
 
-# 删除数据库中的记录
 def delete_record(period, name_code):
     conn = connect_db()
     cursor = conn.cursor()
@@ -99,7 +98,6 @@ def new_approved_car_record(employee_id, car_number):
     conn.close()
     return output is None
 
-# 新增数据库中的记录
 def insert_record(unit, name, car_number, employee_id, special_needs, contact_info, car_bind, current):
     conn = connect_db()
     cursor = conn.cursor()
@@ -148,7 +146,6 @@ with tab1:
     df1 = load_data1()
     df1['通過'] = False
     df1['不通過'] = False
-    # 设置除 "通過" 和 "不通過" 列之外的所有列为不可编辑
     editable_columns = ['通過', '不通過']
     disabled_columns = [col for col in df1.columns if col not in editable_columns]
     edited_df1 = st.data_editor(df1, disabled=disabled_columns)
