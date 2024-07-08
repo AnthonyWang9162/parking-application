@@ -285,12 +285,15 @@ with tab3:
     st.header("新增資料")
     columns = ['單位','姓名代號','姓名','車牌號碼','身分註記','聯絡電話']
     options = ["一般", "孕婦", "身心障礙"]
-    df3 = pd.DataFrame(columns=columns)
-    edited_df3 = st.data_editor(df3, num_rows="dynamic", column_config={"身分註記": st.column_config.SelectboxColumn("身分註記", options=options, help="Select a category", required=True)})
+    df3 = pd.DataFrame(columns= columns)
+    # 顯示空白的 DataFrame
+    edited_df3 = st.data_editor( df3, num_rows="dynamic",column_config={"身分註記": st.column_config.SelectboxColumn("身分註記", options=options,help="Select a category",required=True)})
     if st.button('新增確認'):
         for index, row in edited_df3.iterrows():
             try:
-                insert_record(row['單位'], row['姓名'], row['車牌號碼'], row['姓名代號'], row['身分註記'], row['聯絡電話'], False, current)
-                st.success("資料新增成功")
+                insert_record(row['單位'],row['姓名'], row['車牌號碼'],row['姓名代號'], row['身分註記'], row['聯絡電話'], False, current)
             except:
                 st.error("已成功將資料新增至資料表中")
+            finally:
+                upload_db(local_db_path, db_file_id)
+                st.success("資料新增成功")
