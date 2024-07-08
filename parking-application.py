@@ -17,13 +17,6 @@ creds = Credentials.from_service_account_info(st.secrets["google_drive"])
 service = build('drive', 'v3', credentials=creds)
 
 # 下载和上传 SQLite 数据库文件的函数
-@st.cache_resource
-def connect_db():
-    local_db_path = '/tmp/test.db'
-    conn = sqlite3.connect(local_db_path)
-    return conn
-
-@st.cache
 def download_db(file_id, destination):
     request = service.files().get_media(fileId=file_id)
     fh = io.FileIO(destination, 'wb')
@@ -32,7 +25,6 @@ def download_db(file_id, destination):
     while not done:
         status, done = downloader.next_chunk()
 
-@st.cache
 def upload_db(source, file_id):
     file_metadata = {'name': 'test.db'}
     media = MediaFileUpload(source, mimetype='application/x-sqlite3')
@@ -40,6 +32,11 @@ def upload_db(source, file_id):
         fileId=file_id,
         media_body=media
     ).execute()
+
+def connect_db():
+    local_db_path = '/tmp/test.db'
+    conn = sqlite3.connect(local_db_path)
+    return conn
 
 def get_quarter(year, month):
     if 1 <= month <= 3:
@@ -102,7 +99,6 @@ def new_approved_car_record(employee_id, car_number):
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM 使用者車牌 WHERE 姓名代號 = ? AND 車牌號碼 = ?", (employee_id, car_number))
     output = cursor.fetchone()
-    conn.commit()
     conn.close()
     return output is None
 
