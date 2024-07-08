@@ -23,7 +23,6 @@ def connect_db():
     conn = sqlite3.connect(local_db_path)
     return conn
     
-@st.cache_data
 def download_db(file_id, destination):
     request = service.files().get_media(fileId=file_id)
     fh = io.FileIO(destination, 'wb')
