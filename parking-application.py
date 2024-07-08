@@ -23,6 +23,7 @@ def connect_db():
     conn = sqlite3.connect(local_db_path)
     return conn
 
+@st.cache
 def download_db(file_id, destination):
     request = service.files().get_media(fileId=file_id)
     fh = io.FileIO(destination, 'wb')
@@ -31,6 +32,7 @@ def download_db(file_id, destination):
     while not done:
         status, done = downloader.next_chunk()
 
+@st.cache
 def upload_db(source, file_id):
     file_metadata = {'name': 'test.db'}
     media = MediaFileUpload(source, mimetype='application/x-sqlite3')
@@ -54,7 +56,6 @@ def get_quarter(year, month):
     return year, quarter
 
 # 读取申请记录表
-@st.cache_data
 def load_data1():
     conn = connect_db()
     query = "SELECT * FROM 申請紀錄 WHERE 車牌綁定 = 0"
@@ -62,7 +63,6 @@ def load_data1():
     conn.close()
     return df
 
-@st.cache_data
 def load_data2(current):
     conn = connect_db()
     query = "SELECT * FROM 申請紀錄 WHERE 期別 = ?"
