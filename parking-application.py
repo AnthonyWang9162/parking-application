@@ -23,7 +23,6 @@ def connect_db():
     conn = sqlite3.connect(local_db_path)
     return conn
 
-@st.cache
 def download_db(file_id, destination):
     request = service.files().get_media(fileId=file_id)
     fh = io.FileIO(destination, 'wb')
@@ -32,7 +31,6 @@ def download_db(file_id, destination):
     while not done:
         status, done = downloader.next_chunk()
 
-@st.cache
 def upload_db(source, file_id):
     file_metadata = {'name': 'test.db'}
     media = MediaFileUpload(source, mimetype='application/x-sqlite3')
