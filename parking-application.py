@@ -56,6 +56,7 @@ def get_quarter(year, month):
     return year, quarter
 
 # 读取申请记录表
+@st.cache_data
 def load_data1():
     conn = connect_db()
     query = "SELECT * FROM 申請紀錄 WHERE 車牌綁定 = 0"
@@ -63,6 +64,7 @@ def load_data1():
     conn.close()
     return df
 
+@st.cache_data
 def load_data2(current):
     conn = connect_db()
     query = "SELECT * FROM 申請紀錄 WHERE 期別 = ?"
