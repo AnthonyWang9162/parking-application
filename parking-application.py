@@ -44,14 +44,13 @@ def get_quarter(year, month):
         raise ValueError("Month must be between 1 and 12")
     return year, quarter
 
-# 缓存数据库连接
-@st.cache_resource
+# 连接到 SQLite 数据库
 def connect_db():
     local_db_path = '/tmp/test.db'
     return sqlite3.connect(local_db_path)
 
-# 读取申请记录表
-@st.cache_data(ttl=600)  # 缓存数据，10分钟更新一次
+# 缓存数据加载函数
+@st.cache_data(ttl=600)
 def load_data1():
     conn = connect_db()
     query = "SELECT * FROM 申請紀錄 WHERE 車牌綁定 = 0"
@@ -59,8 +58,7 @@ def load_data1():
     conn.close()
     return df
 
-# 读取当前季度的申请记录表
-@st.cache_data(ttl=600)  # 缓存数据，10分钟更新一次
+@st.cache_data(ttl=600)
 def load_data2(current):
     conn = connect_db()
     query = "SELECT * FROM 申請紀錄 WHERE 期別 = ?"
