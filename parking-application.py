@@ -7,6 +7,9 @@ from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseDownload, MediaFileUpload
 import io
 
+# 设置页面配置
+st.set_page_config(layout="wide", page_title="停車申請管理系統")
+
 # 设置 Google Drive API 凭据
 creds = Credentials.from_service_account_info(st.secrets["google_drive"])
 
@@ -138,9 +141,6 @@ db_file_id = '1_TArAUZyzzZuLX3y320VpytfBlaoUGBB'
 # 下载数据库文件到本地
 local_db_path = '/tmp/test.db'
 download_db(db_file_id, local_db_path)
-
-st.set_page_config(layout="wide")
-st.title("停車申請管理系統")
 
 # 创建选项卡
 tab1, tab2, tab3 = st.tabs(["停車申請待審核", "本期停車申請一覽表", "新增資料"])
