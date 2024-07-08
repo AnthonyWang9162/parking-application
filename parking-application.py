@@ -7,6 +7,9 @@ from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseDownload, MediaFileUpload
 import io
 
+# 设置页面配置
+st.set_page_config(layout="wide", page_title="停車申請管理系統")
+
 # 设置 Google Drive API 凭据
 creds = Credentials.from_service_account_info(st.secrets["google_drive"])
 
@@ -30,6 +33,11 @@ def upload_db(source, file_id):
         media_body=media
     ).execute()
 
+def connect_db():
+    local_db_path = '/tmp/test.db'
+    conn = sqlite3.connect(local_db_path)
+    return conn
+
 def get_quarter(year, month):
     if 1 <= month <= 3:
         quarter = 2
@@ -44,12 +52,8 @@ def get_quarter(year, month):
         raise ValueError("Month must be between 1 and 12")
     return year, quarter
 
-# 连接到 SQLite 数据库
-def connect_db():
-    local_db_path = '/tmp/test.db'
-    return sqlite3.connect(local_db_path)
-
 # 读取申请记录表
+@st.cache_data
 def load_data1():
     conn = connect_db()
     query = "SELECT * FROM 申請紀錄 WHERE 車牌綁定 = 0"
@@ -57,7 +61,7 @@ def load_data1():
     conn.close()
     return df
 
-# 读取当前季度的申请记录表
+@st.cache_data
 def load_data2(current):
     conn = connect_db()
     query = "SELECT * FROM 申請紀錄 WHERE 期別 = ?"
@@ -95,7 +99,6 @@ def new_approved_car_record(employee_id, car_number):
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM 使用者車牌 WHERE 姓名代號 = ? AND 車牌號碼 = ?", (employee_id, car_number))
     output = cursor.fetchone()
-    conn.commit()
     conn.close()
     return output is None
 
@@ -123,7 +126,6 @@ def insert_car_approved_record(employee_id, car_number):
     conn.commit()
     conn.close()
 
-# 获取当前日期并计算当前期别
 today = datetime.today()
 year, quarter = get_quarter(today.year, today.month)
 Taiwan_year = year - 1911
@@ -136,10 +138,6 @@ db_file_id = '1_TArAUZyzzZuLX3y320VpytfBlaoUGBB'
 local_db_path = '/tmp/test.db'
 download_db(db_file_id, local_db_path)
 
-# 设置 Streamlit 页面配置
-st.set_page_config(layout="wide")
-st.title("停車申請管理系統")
-
 # 创建选项卡
 tab1, tab2, tab3 = st.tabs(["停車申請待審核", "本期停車申請一覽表", "新增資料"])
 
@@ -148,7 +146,6 @@ with tab1:
     df1 = load_data1()
     df1['通過'] = False
     df1['不通過'] = False
-    # 设置除 "通過" 和 "不通過" 列之外的所有列为不可编辑
     editable_columns = ['通過', '不通過']
     disabled_columns = [col for col in df1.columns if col not in editable_columns]
     edited_df1 = st.data_editor(df1, disabled=disabled_columns)
@@ -174,7 +171,9 @@ with tab2:
     st.header("本期停車申請一覽表")
     df2 = load_data2(current)
     df2['刪除資料'] = False
-    edited_df2 = st.data_editor(df2, disabled=df2.columns[df2.columns != '刪除資料'])
+    editable_columns = ['刪除資料']
+    disabled_columns = [col for col in df2.columns if col not in editable_columns]
+    edited_df2 = st.data_editor(df2, disabled=disabled_columns)
     if st.button('刪除確認'):
         try:
             for index, row in edited_df2.iterrows():
@@ -186,7 +185,7 @@ with tab2:
 
 with tab3:
     st.header("新增資料")
-    columns = ['單位','姓名代號','姓名','車牌號碼','身分註記','聯絡電話']
+    columns = ['單位', '姓名代號', '姓名', '車牌號碼', '身分註記', '聯絡電話']
     options = ["一般", "孕婦", "身心障礙"]
     df3 = pd.DataFrame(columns=columns)
     edited_df3 = st.data_editor(df3, num_rows="dynamic", column_config={"身分註記": st.column_config.SelectboxColumn("身分註記", options=options, help="Select a category", required=True)})
@@ -195,5 +194,5 @@ with tab3:
             try:
                 insert_record(row['單位'], row['姓名'], row['車牌號碼'], row['姓名代號'], row['身分註記'], row['聯絡電話'], False, current)
                 st.success("資料新增成功")
-            except:
-                st.error("已成功將資料新增至資料表中")
+            except Exception as e:
+                st.error(f"資料新增失敗: {e}")
