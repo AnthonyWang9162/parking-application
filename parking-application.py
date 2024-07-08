@@ -7,12 +7,13 @@ from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseDownload, MediaFileUpload
 import io
 
-# 设置 Google Drive API 凭据
+# 設定 Google Drive API 憑據
 creds = Credentials.from_service_account_info(st.secrets["google_drive"])
 
-# 连接到 Google Drive API
+# 連接到 Google Drive API
 service = build('drive', 'v3', credentials=creds)
-# 下载和上传 SQLite 数据库文件的函数
+
+# 下載和上傳 SQLite 資料庫檔案的函數
 def download_db(file_id, destination):
     request = service.files().get_media(fileId=file_id)
     fh = io.FileIO(destination, 'wb')
@@ -28,7 +29,6 @@ def upload_db(source, file_id):
         fileId=file_id,
         media_body=media
     ).execute()
-
 
 def get_quarter(year, month):
     if 1 <= month <= 3:
@@ -98,6 +98,7 @@ def new_approved_car_record(employee_id, car_number):
     conn.commit()
     conn.close()
     return output is None
+
 # 新增資料庫中的記錄
 def insert_record(unit, name, car_number, employee_id, special_needs, contact_info, car_bind, current):
     conn = connect_db()
@@ -126,9 +127,9 @@ today = datetime.today()
 year, quarter = get_quarter(today.year, today.month)
 Taiwan_year = year - 1911
 current = f"{Taiwan_year}{quarter:02}"
-# Google Drive 文件 ID（你需要手动获取）
+# Google Drive 文件 ID（你需要手動取得）
 db_file_id = '1_TArAUZyzzZuLX3y320VpytfBlaoUGBB'
-# 下载数据库文件到本地
+# 下載資料庫檔案到本地
 local_db_path = '/tmp/test.db'
 download_db(db_file_id, local_db_path)
 
@@ -155,15 +156,15 @@ with tab1:
                 if row['通過'] and row['不通過']:
                     st.error("欄位有誤，請調整後再試")
                 # 如果 '通過' 欄位為 True 且原本的值為 False，更新為車牌綁定 = True
-                elif row['通過'] :
+                elif row['通過']:
                     update_record(row['期別'], row['姓名代號'], True)
                     if new_approved_car_record(row['姓名代號'], row['車牌號碼']):
                         insert_car_approved_record(row['姓名代號'], row['車牌號碼'])
                         st.success("審核完成")
                     else:
                         st.success("審核完成")
-                # 如果 '不通過' 欄位為 True 且原本的值為 False，更新為車牌綁定 = False
-                elif row['不通過'] :
+                # 如果 '不通過' 欄位為 True 且原本的值為 False，刪除記錄
+                elif row['不通過']:
                     delete_record(row['期別'], row['姓名代號'])
                     st.success("審核完成")
         finally:
@@ -185,17 +186,17 @@ with tab2:
 
 with tab3:
     st.header("新增資料")
-    columns = ['單位','姓名代號','姓名','車牌號碼','身分註記','聯絡電話']
+    columns = ['單位', '姓名代號', '姓名', '車牌號碼', '身分註記', '聯絡電話']
     options = ["一般", "孕婦", "身心障礙"]
-    df3 = pd.DataFrame(columns= columns)
+    df3 = pd.DataFrame(columns=columns)
     # 顯示空白的 DataFrame
-    edited_df3 = st.data_editor( df3, num_rows="dynamic",column_config={"身分註記": st.column_config.SelectboxColumn("身分註記", options=options,help="Select a category",required=True)})
+    edited_df3 = st.data_editor(df3, num_rows="dynamic", column_config={"身分註記": st.column_config.SelectboxColumn("身分註記", options=options, help="選擇一個類別", required=True)})
     if st.button('新增確認'):
-        for index, row in edited_df3.iterrows():
-            try:
-                insert_record(row['單位'],row['姓名'], row['車牌號碼'],row['姓名代號'], row['身分註記'], row['聯絡電話'], False, current)
-            except:
-                st.error("已成功將資料新增至資料表中")
-            finally:
-                upload_db(local_db_path, db_file_id)
-                st.success("資料新增成功")
+        try:
+            for index, row in edited_df3.iterrows():
+                insert_record(row['單位'], row['姓名'], row['車牌號碼'], row['姓名代號'], row['身分註記'], row['聯絡電話'], False, current)
+            st.success("資料新增成功")
+        except Exception as e:
+            st.error(f"新增失敗: {e}")
+        finally:
+            upload_db(local_db_path, db_file_id)
