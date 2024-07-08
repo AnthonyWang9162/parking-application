@@ -172,9 +172,7 @@ with tab2:
     df2 = load_data2(current)
     df2['刪除資料'] = False
     # 将所有列设置为不可编辑，除了 '刪除資料'
-    column_config = {col: st.column_config.Column(editable=False) for col in df2.columns if col != '刪除資料'}
-    column_config['刪除資料'] = st.column_config.CheckboxColumn('刪除資料', editable=True)
-    edited_df2 = st.data_editor(df2, column_config=column_config)
+    edited_df2 = st.data_editor(df2, disabled=df2.columns[df2.columns != '刪除資料'])
     if st.button('刪除確認'):
         try:
             for index, row in edited_df2.iterrows():
@@ -183,7 +181,6 @@ with tab2:
                     st.success("資料刪除成功")
         finally:
             upload_db(local_db_path, db_file_id)
-
 with tab3:
     st.header("新增資料")
     columns = ['單位','姓名代號','姓名','車牌號碼','身分註記','聯絡電話']
