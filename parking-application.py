@@ -17,7 +17,7 @@ creds = Credentials.from_service_account_info(st.secrets["google_drive"])
 service = build('drive', 'v3', credentials=creds)
 
 # 下载和上传 SQLite 数据库文件的函数
-@st.cache_resource
+@st.cache_data
 def connect_db():
     local_db_path = '/tmp/test.db'
     conn = sqlite3.connect(local_db_path)
