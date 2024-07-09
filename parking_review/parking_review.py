@@ -70,10 +70,10 @@ def load_data2(current):
     conn.close()
     return df
 
-def load_data3(current):
+def load_data3():
     conn = connect_db()
-    query = "SELECT * FROM 停車位 WHERE 期別 = ?"
-    df = pd.read_sql_query(query, conn, params=(current,))
+    query = "SELECT * FROM 停車位 "
+    df = pd.read_sql_query(query, conn)
     conn.close()
     return df
 # 更新数据库中的记录
