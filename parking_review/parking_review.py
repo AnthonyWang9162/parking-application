@@ -231,6 +231,7 @@ with tab4:
             for index, row in edited_df4.iterrows():
                 if row['更新資料']:
                     update_parking_space(row['車位編號'], row['使用狀態'], row['備註'])
+                    st.success("資料更新成功")
                     
         finally:
             upload_db(local_db_path, db_file_id)
