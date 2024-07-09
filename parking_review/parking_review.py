@@ -221,7 +221,7 @@ with tab3:
 
 with tab4:
     st.header("地下停車位使用狀態維護")
-    df4 = load_data3(current)
+    df4 = load_data3()
     df4['更新資料'] = False
     column = ['車位編號']
     disabled_columns = [col for col in df4.columns if col in column]
