@@ -63,7 +63,6 @@ def load_data1():
     conn.close()
     return df
 
-
 def load_data2(current):
     conn = connect_db()
     query = "SELECT * FROM 申請紀錄 WHERE 期別 = ?"
@@ -71,6 +70,12 @@ def load_data2(current):
     conn.close()
     return df
 
+def load_data3(current):
+    conn = connect_db()
+    query = "SELECT * FROM 停車位 WHERE 期別 = ?"
+    df = pd.read_sql_query(query, conn, params=(current,))
+    conn.close()
+    return df
 # 更新数据库中的记录
 def update_record(period, name_code, plate_binding):
     conn = connect_db()
@@ -129,6 +134,19 @@ def insert_car_approved_record(employee_id, car_number):
     conn.commit()
     conn.close()
 
+def update_parking_space(space_id, status, note):
+    conn = connect_db()
+    cursor = conn.cursor()
+    update_query = """
+    UPDATE 停車位
+    SET 使用狀態 = ? , 備註 = ?
+    WHERE 車位編號 = ? 
+    """
+    cursor.execute(update_query, (status, note, space_id))
+    conn.commit()
+    conn.close()
+
+
 today = datetime.today()
 year, quarter = get_quarter(today.year, today.month)
 Taiwan_year = year - 1911
@@ -143,7 +161,7 @@ download_db(db_file_id, local_db_path)
 
 st.title("停車申請管理系統")
 # 创建选项卡
-tab1, tab2, tab3 = st.tabs(["停車申請待審核", "本期停車申請一覽表", "新增資料"])
+tab1, tab2, tab3, tab4 = st.tabs(["停車申請待審核", "本期停車申請一覽表", "新增資料", "保障名單分配車位"])
 
 with tab1:
     st.header("停車申請待審核")
@@ -200,3 +218,19 @@ with tab3:
                 st.success("資料新增成功")
             except Exception as e:
                 st.error(f"資料新增失敗: {e}")
+
+with tab4:
+    st.header("地下停車位使用狀態維護")
+    df4 = load_data3(current)
+    df4['更新資料'] = False
+    column = ['車位編號']
+    disabled_columns = [col for col in df4.columns if col in column]
+    edited_df4 = st.data_editor(df4, disabled=disabled_columns)
+    if st.button('更新確認'):
+        try:
+            for index, row in edited_df4.iterrows():
+                if row['更新資料']:
+                    update_parking_space(row['車位編號'], row['使用狀態'], row['備註'])
+                    
+        finally:
+            upload_db(local_db_path, db_file_id)
