@@ -134,6 +134,17 @@ def insert_car_approved_record(employee_id, car_number):
     conn.commit()
     conn.close()
 
+def insert_parking_fee(current,employee_id):
+    conn = connect_db()
+    cursor = conn.cursor()
+    insert_query = """
+    INSERT INTO 抽籤繳費 (期別,姓名代號,繳費狀態)
+    VALUES (?,?,'未繳費')
+    """
+    cursor.execute(insert_query, (current,employee_id))
+    conn.commit()
+    conn.close()
+
 def update_parking_space(space_id, status, note):
     conn = connect_db()
     cursor = conn.cursor()
@@ -196,14 +207,27 @@ with tab2:
     editable_columns = ['刪除資料']
     disabled_columns = [col for col in df2.columns if col not in editable_columns]
     edited_df2 = st.data_editor(df2, disabled=disabled_columns)
-    if st.button('刪除確認'):
-        try:
-            for index, row in edited_df2.iterrows():
-                if row['刪除資料']:
-                    delete_record(row['期別'], row['姓名代號'])
-                    st.success("資料刪除成功")
-        finally:
-            upload_db(local_db_path, db_file_id)
+    button1, button2 = st.columns(2)
+    with button1:
+        if st.button('刪除確認'):
+            try:
+                for index, row in edited_df2.iterrows():
+                    if row['刪除資料']:
+                        delete_record(row['期別'], row['姓名代號'])
+                        st.success("資料刪除成功")
+            finally:
+                upload_db(local_db_path, db_file_id)
+    with button2:
+        if st.button('免抽籤進入繳費表'):
+            try:
+                for index, row in edited_df2.iterrows():
+                    if row['身分註記'] != '一般' and row['車牌綁定'] == True:
+                        insert_parking_fee(row['期別'],row['姓名代號'])
+            except:
+                st.error('本期免抽籤資料已經匯入進繳費表')
+            finally:
+                upload_db(local_db_path, db_file_id)
+
 
 with tab3:
     st.header("新增資料")
@@ -224,16 +248,21 @@ with tab4:
     # 加載數據
     df4 = load_data3()
     df4['更新資料'] = False
+
     # 定義下拉選單選項
     options = ["公務車", "公務車(電動)", "值班", "高階主管", "獨董", "公務保留", "身心障礙", "孕婦", "保障", "抽籤"]
+
     # 添加篩選條件選擇框
     filter_option = st.selectbox("篩選使用狀態", ["所有"] + options)
+
     # 根據篩選條件過濾數據框
     if filter_option != "所有":
         df4 = df4[df4['使用狀態'] == filter_option]
+
     # 禁用的列
     column = ['車位編號']
     disabled_columns = [col for col in df4.columns if col in column]
+
     # 顯示可編輯的數據框
     edited_df4 = st.data_editor(
         df4,
@@ -247,6 +276,7 @@ with tab4:
             )
         }
     )
+
     # 更新確認按鈕
     if st.button('更新確認'):
         try:
