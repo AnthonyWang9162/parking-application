@@ -77,7 +77,7 @@ def load_data3():
     conn.close()
     return df
 
-def load_data4():
+def load_data4(current):
     conn = connect_db()
     query = """
     SELECT 
@@ -91,8 +91,9 @@ def load_data4():
         B.繳費狀態 
     FROM 申請紀錄 A
     INNER JOIN 抽籤繳費 B ON A.期別 = B.期別 AND A.姓名代號 = B.姓名代號
+    WHERE A.期別 = ? AND  A.身分註記 != '一般'
     """
-    df = pd.read_sql_query(query, conn)
+    df = pd.read_sql_query(query, conn, params=(current,))
     conn.close()
     return df
 
@@ -307,6 +308,6 @@ with tab4:
         finally:
             upload_db(local_db_path, db_file_id)
     st.header("免抽籤名單分配車位")
-    df4 = load_data4()
-    df4['分配車位'] = False
+    df5 = load_data4(current)
+    df5['分配車位'] = False
     edited_df5 = st.data_editor(df4)
