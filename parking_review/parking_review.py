@@ -323,7 +323,7 @@ with tab4:
     st.header("免抽籤名單分配車位")
     df5 = load_data4(current)
     df5['分配車位'] = False
-    editable_column = ['車位編號']
+    editable_column = ['車位編號','分配車位']
     disabled_columns2 = [col for col in df5.columns if col not in editable_column]
 
 
