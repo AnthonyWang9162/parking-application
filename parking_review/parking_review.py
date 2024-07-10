@@ -88,8 +88,8 @@ def load_data4(current):
         A.聯絡電話,
         A.身分註記,
         B.車位編號,
-        B.繳費狀態,
-        C.車位備註 
+        C.車位備註,
+        B.繳費狀態 
     FROM 申請紀錄 A
     INNER JOIN 抽籤繳費 B ON A.期別 = B.期別 AND A.姓名代號 = B.姓名代號
     LEFT JOIN 停車位 C ON B.車位編號 = C.車位編號
@@ -99,6 +99,28 @@ def load_data4(current):
     conn.close()
     return df
 
+def load_data5(current):
+    conn = connect_db()
+    query = """
+    SELECT 
+        A.期別,
+        A.單位,
+        A.姓名代號,
+        A.姓名,
+        A.聯絡電話,
+        A.身分註記,
+        B.車位編號,
+        C.車位備註,
+        B.繳費狀態,
+        B.發票號碼, 
+    FROM 申請紀錄 A
+    INNER JOIN 抽籤繳費 B ON A.期別 = B.期別 AND A.姓名代號 = B.姓名代號
+    LEFT JOIN 停車位 C ON B.車位編號 = C.車位編號
+    WHERE A.期別 = ?
+    """
+    df = pd.read_sql_query(query, conn, params=(current,))
+    conn.close()
+    return df
 # 更新数据库中的记录
 def update_record(period, name_code, plate_binding):
     conn = connect_db()
@@ -192,6 +214,18 @@ def parking_distribution(space_id, current, employee_id):
     conn.commit()
     conn.close()
 
+def update_payment(payment_status, bill_number, current, employee_id):
+    conn = connect_db()
+    cursor = conn.cursor()
+    update_query = """
+    UPDATE 抽籤繳費
+    SET 繳費狀態 = ? , 發票號碼 = ?
+    WHERE 期別 = ?  AND 姓名代號 = ?
+    """
+    cursor.execute(update_query, (payment_status, bill_number, current, employee_id))
+    conn.commit()
+    conn.close()
+
 today = datetime.today()
 year, quarter = get_quarter(today.year, today.month)
 Taiwan_year = year - 1911
@@ -206,7 +240,7 @@ download_db(db_file_id, local_db_path)
 
 st.title("停車申請管理系統")
 # 创建选项卡
-tab1, tab2, tab3, tab4 = st.tabs(["停車申請待審核", "本期停車申請一覽表", "新增資料", "免抽籤名單分配車位"])
+tab1, tab2, tab3, tab4, tab5= st.tabs(["停車申請待審核", "本期停車申請一覽表", "新增資料", "免抽籤名單分配車位","本期員工停車繳費維護"])
 
 with tab1:
     st.header("停車申請待審核")
@@ -320,13 +354,12 @@ with tab4:
                     st.success('資料更新成功')
         finally:
             upload_db(local_db_path, db_file_id)
+
     st.header("免抽籤名單分配車位")
     df5 = load_data4(current)
     df5['分配車位'] = False
     editable_column = ['車位編號','分配車位']
     disabled_columns2 = [col for col in df5.columns if col not in editable_column]
-
-
 
     edited_df5 = st.data_editor(
         df5,
@@ -337,6 +370,24 @@ with tab4:
             for index, row in edited_df5.iterrows():
                 if row['分配車位']:
                     parking_distribution(row['車位編號'],row['期別'],row['姓名代號'])
+                    st.success('車位分配成功')
+        finally:
+            upload_db(local_db_path, db_file_id)
+with tab5:
+    st.header("本期員工停車繳費維護")
+    df6 = load_data5(current)
+    df6['更新繳費資訊'] = False
+    editable_column = ['繳費狀態','發票號碼','更新繳費資訊']
+    disabled_columns = [col for col in df6.columns if col not in editable_column]
+
+    edited_df6 = st.data_editor(
+        df6,
+        disabled=disabled_columns2)
+    if st.button('更新繳費資訊確認'):
+        try:
+            for index, row in edited_df6.iterrows():
+                if row['更新繳費資訊']:
+                    update_payment(row['繳費狀態'], row['發票號碼'], row['期別'], row['姓名代號'])
                     st.success('車位分配成功')
         finally:
             upload_db(local_db_path, db_file_id)
