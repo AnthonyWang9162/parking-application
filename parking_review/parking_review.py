@@ -225,14 +225,25 @@ with tab4:
     df4['更新資料'] = False
     column = ['車位編號']
     disabled_columns = [col for col in df4.columns if col in column]
-    options = ["上級長官", "高階長官", "公務保留","保障","抽籤"]
-    edited_df4 = st.data_editor(df4, disabled=disabled_columns, column_config={"使用狀態": st.column_config.SelectboxColumn("使用狀態", options=options, help="請選擇該車位用途", required=True)})
+    options = ["上級長官", "高階長官", "公務保留", "保障", "抽籤"]
+
+    edited_df4 = st.data_editor(
+        df4,
+        disabled=disabled_columns,
+        column_config={
+            "使用狀態": st.column_config.SelectboxColumn(
+                "使用狀態",
+                options=options,
+                help="請選擇該車位用途",
+                required=True
+            )
+        }
+    )
     if st.button('更新確認'):
         try:
             for index, row in edited_df4.iterrows():
                 if row['更新資料']:
                     update_parking_space(row['車位編號'], row['使用狀態'], row['備註'])
                     st.success('資料更新成功')
-                    
         finally:
             upload_db(local_db_path, db_file_id)
