@@ -310,4 +310,4 @@ with tab4:
     st.header("免抽籤名單分配車位")
     df5 = load_data4(current)
     df5['分配車位'] = False
-    edited_df5 = st.data_editor(df4)
+    edited_df5 = st.data_editor(df5)
