@@ -76,6 +76,26 @@ def load_data3():
     df = pd.read_sql_query(query, conn)
     conn.close()
     return df
+
+def load_data4():
+    conn = connect_db()
+    query = """
+    SELECT 
+        A.期別,
+        A.單位,
+        A.姓名代號,
+        A.姓名,
+        A.聯絡電話,
+        A.身分註記,
+        B.車位編號,
+        B.繳費狀態 
+    FROM 申請紀錄 A
+    INNER JOIN 抽籤繳費 B ON A.期別 = B.期別 AND A.姓名代號 = B.姓名代號
+    """
+    df = pd.read_sql_query(query, conn)
+    conn.close()
+    return df
+
 # 更新数据库中的记录
 def update_record(period, name_code, plate_binding):
     conn = connect_db()
@@ -286,3 +306,7 @@ with tab4:
                     st.success('資料更新成功')
         finally:
             upload_db(local_db_path, db_file_id)
+    st.header("免抽籤名單分配車位")
+    df4 = load_data4()
+    df4['分配車位'] = False
+    edited_df5 = st.data_editor(df4)
