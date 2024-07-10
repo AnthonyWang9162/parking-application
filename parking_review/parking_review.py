@@ -112,7 +112,7 @@ def load_data5(current):
         B.車位編號,
         C.車位備註,
         B.繳費狀態,
-        B.發票號碼, 
+        B.發票號碼 
     FROM 申請紀錄 A
     INNER JOIN 抽籤繳費 B ON A.期別 = B.期別 AND A.姓名代號 = B.姓名代號
     LEFT JOIN 停車位 C ON B.車位編號 = C.車位編號
