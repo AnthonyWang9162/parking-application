@@ -50,7 +50,7 @@ def perform_lottery(current):
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    cursor.execute("SELECT 車位編號 FROM 停車位 WHERE 使用狀態 = '抽籤車位'")
+    cursor.execute("SELECT 車位編號 FROM 停車位 WHERE 使用狀態 = '抽籤'")
     spaces = [space[0] for space in cursor.fetchall()]
 
     cursor.execute("SELECT 單位, 姓名, 姓名代號 FROM 申請紀錄 WHERE 期別 = ? AND 身分註記 = '一般'", (current,))
@@ -190,7 +190,7 @@ st.title('停車位抽籤系統')
 # 连接到数据库
 conn = get_db_connection()
 cursor = conn.cursor()
-spaces_number = cursor.execute("SELECT COUNT(車位編號) FROM 停車位 WHERE 使用狀態 = '抽籤車位'").fetchone()[0]
+spaces_number = cursor.execute("SELECT COUNT(車位編號) FROM 停車位 WHERE 使用狀態 = '抽籤'").fetchone()[0]
 participants_number = cursor.execute("SELECT COUNT(姓名代號) FROM 申請紀錄 WHERE 期別 = ? AND 身分註記 = '一般'", (current,)).fetchone()[0]
 conn.close()
 
