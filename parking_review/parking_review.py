@@ -377,7 +377,7 @@ with tab5:
     st.header("本期員工停車繳費維護")
     df6 = load_data5(current)
     df6['更新繳費資訊'] = False
-    editable_columns = ['繳費狀態', '發票號碼', '更新繳費資訊']
+    editable_columns = ['車位編號','繳費狀態', '發票號碼', '更新繳費資訊']
     disabled_columns = [col for col in df6.columns if col not in editable_columns]
 
     edited_df6 = st.data_editor(
