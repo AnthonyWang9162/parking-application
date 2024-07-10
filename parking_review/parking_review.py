@@ -324,7 +324,7 @@ with tab4:
     df5 = load_data4(current)
     df5['分配車位'] = False
     editable_column = ['車位編號']
-    disabled_columns2 = [col for col in df4.columns if col not in editable_column]
+    disabled_columns2 = [col for col in df5.columns if col not in editable_column]
 
 
 
@@ -334,7 +334,7 @@ with tab4:
     
     if st.button('分配車位確認'):
         try:
-            for index, row in edited_df4.iterrows():
+            for index, row in edited_df5.iterrows():
                 if row['分配車位']:
                     parking_distribution(row['車位編號'],row['期別'],row['姓名代號'])
                     st.success('車位分配成功')
