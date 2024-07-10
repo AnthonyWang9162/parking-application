@@ -88,7 +88,8 @@ def load_data4(current):
         A.聯絡電話,
         A.身分註記,
         B.車位編號,
-        B.繳費狀態 
+        B.繳費狀態
+        B.備註
     FROM 申請紀錄 A
     INNER JOIN 抽籤繳費 B ON A.期別 = B.期別 AND A.姓名代號 = B.姓名代號
     WHERE A.期別 = ? AND  A.身分註記 != '一般'
