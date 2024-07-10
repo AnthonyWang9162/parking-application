@@ -8,7 +8,7 @@ from googleapiclient.http import MediaIoBaseDownload, MediaFileUpload
 import io
 
 # 设置页面配置
-st.set_page_config(page_title="停車申請管理系統")
+st.set_page_config(layout="wide",page_title="停車申請管理系統")
 
 # 设置 Google Drive API 凭据
 creds = Credentials.from_service_account_info(st.secrets["google_drive"])
@@ -227,7 +227,7 @@ with tab2:
                 st.error('本期免抽籤資料已經匯入進繳費表')
             finally:
                 upload_db(local_db_path, db_file_id)
-
+                st.success('免抽籤資料匯入成功')
 
 with tab3:
     st.header("新增資料")
