@@ -89,7 +89,7 @@ def load_data4(current):
         A.身分註記,
         B.車位編號,
         B.繳費狀態,
-        c.備註 
+        c.車位備註 
     FROM 申請紀錄 A
     INNER JOIN 抽籤繳費 B ON A.期別 = B.期別 AND A.姓名代號 = B.姓名代號
     LEFT JOIN 停車位 C ON B.車位編號 = C.車位編號
@@ -173,7 +173,7 @@ def update_parking_space(space_id, status, note):
     cursor = conn.cursor()
     update_query = """
     UPDATE 停車位
-    SET 使用狀態 = ? , 備註 = ?
+    SET 使用狀態 = ? , 車位備註 = ?
     WHERE 車位編號 = ? 
     """
     cursor.execute(update_query, (status, note, space_id))
@@ -316,7 +316,7 @@ with tab4:
         try:
             for index, row in edited_df4.iterrows():
                 if row['更新資料']:
-                    update_parking_space(row['車位編號'], row['使用狀態'], row['備註'])
+                    update_parking_space(row['車位編號'], row['使用狀態'], row['車位備註'])
                     st.success('資料更新成功')
         finally:
             upload_db(local_db_path, db_file_id)
