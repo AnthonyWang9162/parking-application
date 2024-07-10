@@ -172,7 +172,7 @@ download_db(db_file_id, local_db_path)
 
 st.title("停車申請管理系統")
 # 创建选项卡
-tab1, tab2, tab3, tab4 = st.tabs(["停車申請待審核", "本期停車申請一覽表", "新增資料", "保障名單分配車位"])
+tab1, tab2, tab3, tab4 = st.tabs(["停車申請待審核", "本期停車申請一覽表", "新增資料", "免抽籤名單分配車位"])
 
 with tab1:
     st.header("停車申請待審核")
