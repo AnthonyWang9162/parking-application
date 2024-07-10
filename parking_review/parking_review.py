@@ -383,4 +383,11 @@ with tab5:
     edited_df6 = st.data_editor(
         df6,
         disabled=disabled_columns2)
-
+    if st.button('更新繳費資訊確認'):
+        try:
+            for index, row in edited_df6.iterrows():
+                if row['更新繳費資訊']:
+                    update_payment(row['繳費狀態'], row['發票號碼'], row['期別'], row['姓名代號'])
+                    st.success('車位分配成功')
+        finally:
+            upload_db(local_db_path, db_file_id)
