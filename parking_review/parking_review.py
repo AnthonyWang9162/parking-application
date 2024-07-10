@@ -223,11 +223,11 @@ with tab2:
                 for index, row in edited_df2.iterrows():
                     if row['身分註記'] != '一般' and row['車牌綁定'] == True:
                         insert_parking_fee(row['期別'],row['姓名代號'])
+                st.success('免抽籤資料匯入成功')
             except:
                 st.error('本期免抽籤資料已經匯入進繳費表')
             finally:
                 upload_db(local_db_path, db_file_id)
-                st.success('免抽籤資料匯入成功')
 
 with tab3:
     st.header("新增資料")
