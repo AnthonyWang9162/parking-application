@@ -180,6 +180,17 @@ def update_parking_space(space_id, status, note):
     conn.commit()
     conn.close()
 
+def parking_distribution(space_id, current, employee_id):
+    conn = connect_db()
+    cursor = conn.cursor()
+    update_query = """
+    UPDATE 抽籤繳費
+    SET 車位編號 = ? 
+    WHERE 期別 = ?  AND 姓名代號 = ?
+    """
+    cursor.execute(update_query, (space_id, current, employee_id))
+    conn.commit()
+    conn.close()
 
 today = datetime.today()
 year, quarter = get_quarter(today.year, today.month)
@@ -283,13 +294,13 @@ with tab4:
         df4 = df4[df4['使用狀態'] == filter_option]
 
     # 禁用的列
-    column = ['車位編號']
-    disabled_columns = [col for col in df4.columns if col in column]
+    column1 = ['車位編號']
+    disabled_columns1 = [col for col in df4.columns if col in column1]
 
     # 顯示可編輯的數據框
     edited_df4 = st.data_editor(
         df4,
-        disabled=disabled_columns,
+        disabled=disabled_columns1,
         column_config={
             "使用狀態": st.column_config.SelectboxColumn(
                 "使用狀態",
@@ -312,4 +323,20 @@ with tab4:
     st.header("免抽籤名單分配車位")
     df5 = load_data4(current)
     df5['分配車位'] = False
-    edited_df5 = st.data_editor(df5)
+    editable_column = ['車位編號']
+    disabled_columns2 = [col for col in df4.columns if col not in editable_column]
+
+
+
+    edited_df5 = st.data_editor(
+        df5,
+        disabled=disabled_columns2)
+    
+    if st.button('分配車位確認'):
+        try:
+            for index, row in edited_df4.iterrows():
+                if row['分配車位']:
+                    parking_distribution(row['車位編號'],row['期別'],row['姓名代號'])
+                    st.success('車位分配成功')
+        finally:
+            upload_db(local_db_path, db_file_id)
