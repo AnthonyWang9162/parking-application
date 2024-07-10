@@ -225,7 +225,7 @@ with tab4:
     df4['更新資料'] = False
     column = ['車位編號']
     disabled_columns = [col for col in df4.columns if col in column]
-    options = ["公務車", "公務車(電動)", "值班", "高階主管", "公務保留", "身心障礙", "孕婦", "保障", "抽籤"]
+    options = ["公務車", "公務車(電動)", "值班", "高階主管", "獨董", "公務保留", "身心障礙", "孕婦", "保障", "抽籤"]
 
     edited_df4 = st.data_editor(
         df4,
