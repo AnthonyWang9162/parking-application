@@ -377,17 +377,19 @@ with tab5:
     st.header("本期員工停車繳費維護")
     df6 = load_data5(current)
     df6['更新繳費資訊'] = False
-    editable_column1 = ['繳費狀態','發票號碼','更新繳費資訊']
-    disabled_columns = [col for col in df6.columns if col not in editable_column1]
+    editable_columns = ['繳費狀態', '發票號碼', '更新繳費資訊']
+    disabled_columns = [col for col in df6.columns if col not in editable_columns]
 
     edited_df6 = st.data_editor(
         df6,
-        disabled=disabled_columns2)
+        disabled=disabled_columns
+    )
+    
     if st.button('更新繳費資訊確認'):
         try:
             for index, row in edited_df6.iterrows():
                 if row['更新繳費資訊']:
                     update_payment(row['繳費狀態'], row['發票號碼'], row['期別'], row['姓名代號'])
-                    st.success('車位分配成功')
+                    st.success('繳費資訊更新成功')
         finally:
             upload_db(local_db_path, db_file_id)
