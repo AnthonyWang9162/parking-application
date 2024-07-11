@@ -378,12 +378,22 @@ with tab5:
     df6 = load_data5(current)
     df6['更新繳費資訊'] = False
     editable_columns = ['車位編號','繳費狀態', '發票號碼', '更新繳費資訊']
+    options = ['已繳費','未繳費','放棄']
     disabled_columns = [col for col in df6.columns if col not in editable_columns]
-
+    
     edited_df6 = st.data_editor(
         df6,
-        disabled=disabled_columns
+        disabled=disabled_columns,
+        column_config={
+            "繳費狀態": st.column_config.SelectboxColumn(
+                "繳費狀態",
+                options=options,
+                help="請選擇繳費狀態",
+                required=True
+            )
+        }
     )
+
     
     if st.button('更新繳費資訊確認'):
         try:
