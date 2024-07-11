@@ -155,19 +155,6 @@ def new_approved_car_record(employee_id, car_number):
     conn.close()
     return output is None
 
-# 新增数据库中的记录
-def insert_record(unit, name, car_number, employee_id, special_needs, contact_info, car_bind, current):
-    conn = connect_db()
-    cursor = conn.cursor()
-    current_date = datetime.now().strftime('%Y-%m-%d')
-    insert_query = """
-    INSERT INTO 申請紀錄 (日期,期別,姓名代號,姓名,單位,車牌號碼,聯絡電話,身分註記,車牌綁定)
-    VALUES (?,?,?,?,?,?,?,?,?)
-    """
-    cursor.execute(insert_query, (current_date, current, employee_id, name, unit, car_number, contact_info, special_needs, car_bind))
-    conn.commit()
-    conn.close()
-
 def insert_car_approved_record(employee_id, car_number):
     conn = connect_db()
     cursor = conn.cursor()
@@ -240,7 +227,7 @@ download_db(db_file_id, local_db_path)
 
 st.title("停車申請管理系統")
 # 创建选项卡
-tab1, tab2, tab3, tab4, tab5= st.tabs(["停車申請待審核", "本期停車申請一覽表", "新增資料", "免抽籤名單分配車位","本期員工停車繳費維護"])
+tab1, tab2, tab4, tab5= st.tabs(["停車申請待審核", "本期停車申請一覽表", "免抽籤名單分配車位","本期員工停車繳費維護"])
 
 with tab1:
     st.header("停車申請待審核")
@@ -296,20 +283,6 @@ with tab2:
                 st.error('本期免抽籤資料已經匯入進繳費表')
             finally:
                 upload_db(local_db_path, db_file_id)
-
-with tab3:
-    st.header("新增資料")
-    columns = ['單位', '姓名代號', '姓名', '車牌號碼', '身分註記', '聯絡電話']
-    options = ["一般", "孕婦", "身心障礙"]
-    df3 = pd.DataFrame(columns=columns)
-    edited_df3 = st.data_editor(df3, num_rows="dynamic", column_config={"身分註記": st.column_config.SelectboxColumn("身分註記", options=options, help="Select a category", required=True)})
-    if st.button('新增確認'):
-        for index, row in edited_df3.iterrows():
-            try:
-                insert_record(row['單位'], row['姓名'], row['車牌號碼'], row['姓名代號'], row['身分註記'], row['聯絡電話'], False, current)
-                st.success("資料新增成功")
-            except Exception as e:
-                st.error(f"資料新增失敗: {e}")
 
 with tab4:
     st.header("地下停車位使用狀態維護")  
