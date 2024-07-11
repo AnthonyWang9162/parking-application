@@ -286,7 +286,7 @@ with tab2:
             finally:
                 upload_db(local_db_path, db_file_id)
     with button2:
-        if st.button('免抽籤進入繳費表'):
+        if st.button('免抽籤準備分配車位'):
             try:
                 for index, row in edited_df2.iterrows():
                     if row['身分註記'] != '一般' and row['車牌綁定'] == True:
