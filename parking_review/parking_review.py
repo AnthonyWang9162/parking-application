@@ -375,12 +375,17 @@ with tab4:
             upload_db(local_db_path, db_file_id)
 with tab5:
     st.header("本期員工停車繳費維護")
-    df6 = load_data5(current)
-    df6['更新繳費資訊'] = False
-    editable_columns = ['車位編號','繳費狀態', '發票號碼', '更新繳費資訊']
-    options = ['已繳費','未繳費','放棄']
-    disabled_columns = [col for col in df6.columns if col not in editable_columns]
+    # 姓名输入框
+    name = st.text_input("請輸入要篩選的姓名") 
     
+    df6 = load_data5(current)
+    if name:
+        df6 = df6[df6['姓名'].str.contains(name)]
+    df6['更新繳費資訊'] = False
+    editable_columns = ['繳費狀態', '發票號碼', '更新繳費資訊']
+    options = ['已繳費', '未繳費', '放棄']
+    disabled_columns = [col for col in df6.columns if col not in editable_columns]
+        
     edited_df6 = st.data_editor(
         df6,
         disabled=disabled_columns,
@@ -394,7 +399,6 @@ with tab5:
         }
     )
 
-    
     if st.button('更新繳費資訊確認'):
         try:
             for index, row in edited_df6.iterrows():
