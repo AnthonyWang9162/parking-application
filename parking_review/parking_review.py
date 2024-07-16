@@ -380,53 +380,18 @@ with tab4:
     st.header("免抽籤名單分配車位")
     df5 = load_data4(current)
     df5['分配車位'] = False
-
-    # 定義函數根據身分註記生成車位編號選項
-    def get_parking_slots(identity):
-        df_parking = load_data3()  # 重新加載停車位數據
-        return df_parking[df_parking['使用狀態'] == identity]['車位編號'].tolist()
-
-    # 為每一行數據生成動態下拉選單
-    parking_slots_options = df5['身分註記'].apply(get_parking_slots)
-
-    # 將選項插入到df5中
-    df5['車位編號選項'] = parking_slots_options
-
-    # 禁用的列
-    editable_columns = ['車位編號', '分配車位']
-    disabled_columns2 = [col for col in df5.columns if col not in editable_columns]
-
-    # 動態配置列
-    column_config = {
-        "車位編號": st.column_config.SelectboxColumn(
-            "車位編號",
-            options=options[0],  # 初始化時給一個空的選項
-            help="根據身分註記選擇車位編號",
-            required=True
-        )
-    }
+    editable_column = ['車位編號','分配車位']
+    disabled_columns2 = [col for col in df5.columns if col not in editable_column]
 
     edited_df5 = st.data_editor(
         df5,
-        disabled=disabled_columns2,
-        column_config=column_config
-    )
-
-    # 更新下拉選單選項
-    for index, row in edited_df5.iterrows():
-        edited_df5.at[index, '車位編號'] = st.selectbox(
-            "選擇車位編號",
-            options=row['車位編號選項'],
-            index=0,
-            key=f"selectbox_{index}"
-        )
-
-    # 分配車位確認按鈕
+        disabled=disabled_columns2)
+    
     if st.button('分配車位確認'):
         try:
             for index, row in edited_df5.iterrows():
                 if row['分配車位']:
-                    parking_distribution(row['車位編號'], row['期別'], row['姓名代號'])
+                    parking_distribution(row['車位編號'],row['期別'],row['姓名代號'])
                     st.success('車位分配成功')
         finally:
             upload_db(local_db_path, db_file_id)
