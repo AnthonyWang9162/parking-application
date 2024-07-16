@@ -20,7 +20,6 @@ service = build('drive', 'v3', credentials=creds)
 
 lockfile_path = "/tmp/operation.lock"
 # 下载和上传 SQLite 数据库文件的函数
-
 def download_db(file_id, destination):
     request = service.files().get_media(fileId=file_id)
     fh = io.FileIO(destination, 'wb')
@@ -112,7 +111,6 @@ def send_email(employee_id, name, text, subject_text):
 
 # 建立Streamlit表單
 def main():
-    st.set_page_config( page_title="停車抽籤申請")
     # 獲取今天的日期
     today = datetime.today()
     year, quarter = get_quarter(today.year, today.month)
@@ -165,7 +163,7 @@ def submit_application(conn, cursor, unit, name, car_number, employee_id, specia
             ''', (current, employee_id))
             existing_record = cursor.fetchone()
             if existing_record:
-                st.error('您已經在本期提交過申請，請勿重複提交，，如需修正申請資料請聯繫秘書處大樓管理組(分機:6395)!')
+                st.error('您已經在本期提交過申請，請勿重複提交，如需修正申請資料請聯繫秘書處大樓管理組(分機:6395)!')
             elif special_needs == '孕婦':
                 status = get_pregnant_record_status(cursor, employee_id, previous1, previous2)  
                 if status == 'none':
@@ -177,6 +175,7 @@ def submit_application(conn, cursor, unit, name, car_number, employee_id, specia
                 elif status == 'only_last_period':
                     if has_approved_car_record(cursor, employee_id, car_number):
                         insert_apply(conn, cursor, unit, name, car_number, employee_id, special_needs, contact_info, True, current, local_db_path, db_file_id)
+                        insert_parking_fee(cursor,current,employee_id)
                         st.success('本期"孕婦"身分停車申請成功')
                         text = "您有孕婦資格，本期停車申請成功，感謝您。"
                         subject_text = "本期停車申請成功通知"
@@ -206,6 +205,7 @@ def submit_application(conn, cursor, unit, name, car_number, employee_id, specia
                 if disable_data:
                     if has_approved_car_record(cursor, employee_id, car_number):
                         insert_apply(conn, cursor, unit, name, car_number, employee_id, special_needs, contact_info, True, current, local_db_path, db_file_id)
+                        insert_parking_fee(cursor,current,employee_id)
                         st.success('本期"身心障礙"身分停車申請成功')
                         text = "您有身心障礙資格，本期停車申請成功，感謝您。"
                         subject_text = "本期停車申請成功通知"
@@ -235,6 +235,7 @@ def submit_application(conn, cursor, unit, name, car_number, employee_id, specia
                     if check_user_eligibility(employee_id, conn, cursor, previous1, previous2):
                         if has_approved_car_record(cursor, employee_id, car_number):
                             insert_apply(conn, cursor, unit, name, car_number, employee_id, '保障', contact_info, True, current, local_db_path, db_file_id)
+                            insert_parking_fee(cursor,current,employee_id)
                             st.success('由於您前兩期申請停車都未抽籤，本期獲得保障資格!')
                             text = "經確認您連續兩期都有申請停車，且都未中籤，本期將獲得保障車位，感謝您。"
                             subject_text = "本期停車抽籤申請成功並獲得保障車位"
@@ -250,6 +251,7 @@ def submit_application(conn, cursor, unit, name, car_number, employee_id, specia
                         if status == 'only_last_period':
                             if has_approved_car_record(cursor, employee_id, car_number):
                                 insert_apply(conn, cursor, unit, name, car_number, employee_id, '孕婦', contact_info, True, current, local_db_path, db_file_id)
+                                insert_parking_fee(cursor,current,employee_id)
                                 st.success('由於您上期申請孕婦資格成功，本期將自動替換為孕婦身分申請!')
                                 text = "由於您上期孕婦申請成功，您的申請資格已由一般轉為孕婦身份，將獲得保障車位，感謝您。"
                                 subject_text = "本期停車抽籤申請成功並將申請身分改為孕婦通知"
@@ -308,6 +310,14 @@ def check_user_eligibility(employee_id, conn, cursor,previous1,previous2):
 def has_approved_car_record(cursor, employee_id, car_number):
     cursor.execute("SELECT * FROM 使用者車牌 WHERE 姓名代號 = ? AND 車牌號碼 = ?", (employee_id, car_number))
     return cursor.fetchone() is not None
+
+def insert_parking_fee(cursor,current,employee_id):
+    insert_query = """
+    INSERT INTO 抽籤繳費 (期別,姓名代號,繳費狀態)
+    VALUES (?,?,'未繳費')
+    """
+    cursor.execute(insert_query, (current,employee_id))
+
 
 def get_pregnant_record_status(cursor, employee_id,last_period,before_last_period):
     cursor.execute('''
