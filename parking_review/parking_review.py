@@ -368,6 +368,9 @@ with tab5:
     # 根據姓名篩選數據
     if name:
         df6 = df6[df6['姓名'].str.contains(name)]
+        
+    # 确保 '車位編號' 列为字符串，并填充 NaN 值
+    df6['車位編號'] = df6['車位編號'].astype(str).fillna('')
 
     # 根據選擇的篩選條件進行進一步篩選
     if filter_option == "正取":
