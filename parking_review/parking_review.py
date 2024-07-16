@@ -353,12 +353,28 @@ with tab4:
             upload_db(local_db_path, db_file_id)
 with tab5:
     st.header("本期員工停車繳費維護")
+
     # 姓名输入框
     name = st.text_input("請輸入要篩選的姓名") 
-    
+
+    # 篩選條件下拉選單
+    filter_option = st.selectbox(
+        "選擇車位篩選條件",
+        ["所有", "正取", "備取"]
+    )
+
     df6 = load_data5(current)
+
+    # 根據姓名篩選數據
     if name:
         df6 = df6[df6['姓名'].str.contains(name)]
+
+    # 根據選擇的篩選條件進行進一步篩選
+    if filter_option == "正取":
+        df6 = df6[df6['車位編號'].str.startswith('B')]
+    elif filter_option == "備取":
+        df6 = df6[df6['車位編號'].str.startswith('備取')]
+
     df6['更新繳費資訊'] = False
     editable_columns = ['繳費狀態', '發票號碼', '更新繳費資訊']
     options = ['已繳費', '未繳費', '放棄']
