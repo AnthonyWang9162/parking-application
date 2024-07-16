@@ -249,6 +249,8 @@ with tab1:
                         st.success("審核完成")
                     else:
                         st.success("審核完成")
+                    if row['身分註記'] != '一般':
+                        insert_parking_fee(current, row['姓名代號'])
                 elif row['不通過']:
                     delete_record(row['期別'], row['姓名代號'])
                     st.success("審核完成")
