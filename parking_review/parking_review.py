@@ -257,17 +257,19 @@ with tab1:
 
 with tab2:
     st.header("本期停車申請一覽表")
-    name = st.text_input("請輸入要篩選的姓名") 
+    name = st.text_input("請輸入要篩選的姓名", key="name_input_tab2") 
     df2 = load_data2(current)
     if name:
         df2 = df2[df2['姓名'].str.contains(name)]
     df2['刪除資料'] = False
     editable_columns = ['刪除資料']
     disabled_columns = [col for col in df2.columns if col not in editable_columns]
-    edited_df2 = st.data_editor(df2, disabled=disabled_columns)
+    edited_df2 = st.data_editor(df2, disabled=disabled_columns, key="data_editor_tab2")
+    
     button1, button2 = st.columns(2)
+    
     with button1:
-        if st.button('刪除確認'):
+        if st.button('刪除確認', key="delete_confirm_button"):
             try:
                 for index, row in edited_df2.iterrows():
                     if row['刪除資料']:
@@ -275,18 +277,18 @@ with tab2:
                         st.success("資料刪除成功")
             finally:
                 upload_db(local_db_path, db_file_id)
+                
     with button2:
-        if st.button('免抽籤準備分配車位'):
+        if st.button('免抽籤準備分配車位', key="prepare_parking_button"):
             try:
                 for index, row in edited_df2.iterrows():
                     if row['身分註記'] != '一般' and row['車牌綁定'] == True:
-                        insert_parking_fee(row['期別'],row['姓名代號'])
+                        insert_parking_fee(row['期別'], row['姓名代號'])
                 st.success('免抽籤資料匯入成功')
             except:
                 st.error('本期免抽籤資料已經匯入進繳費表')
             finally:
                 upload_db(local_db_path, db_file_id)
-
 with tab4:
     st.header("地下停車位使用狀態維護")  
     # 加載數據
