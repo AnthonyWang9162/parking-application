@@ -257,7 +257,10 @@ with tab1:
 
 with tab2:
     st.header("本期停車申請一覽表")
+    name = st.text_input("請輸入要篩選的姓名") 
     df2 = load_data2(current)
+    if name:
+        df2 = df2[df2['姓名'].str.contains(name)]
     df2['刪除資料'] = False
     editable_columns = ['刪除資料']
     disabled_columns = [col for col in df2.columns if col not in editable_columns]
