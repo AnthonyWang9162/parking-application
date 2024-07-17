@@ -524,6 +524,6 @@ with tab6:
         df7,
         disabled=disabled_columns,
         column_config={
-            '車位備註': st.column_config.Column(width='500px')
+            '車位備註': st.column_config.Column(width='2000px')
         }
     )
