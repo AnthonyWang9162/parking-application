@@ -31,7 +31,7 @@ def download_db(file_id, destination):
         status, done = downloader.next_chunk()
 
 def upload_db(source, file_id):
-    file_metadata = {'name': '抽籤管理系統.db'}
+    file_metadata = {'name': 'test.db'}
     media = MediaFileUpload(source, mimetype='application/x-sqlite3')
     updated_file = service.files().update(
         fileId=file_id,
@@ -40,7 +40,7 @@ def upload_db(source, file_id):
 
 def get_db_connection():
     # 使用本地 SQLite 数据库文件
-    db_file_path = '/tmp/抽籤管理系統.db'
+    db_file_path = '/tmp/test.db'
     # 确保下载数据库文件到临时路径
     download_db('1_TArAUZyzzZuLX3y320VpytfBlaoUGBB', db_file_path)  # 替换为你的数据库文件 ID
     conn = sqlite3.connect(db_file_path)
