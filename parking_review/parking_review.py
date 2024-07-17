@@ -133,15 +133,15 @@ def load_data6():
     conn = connect_db()
     query = """
     SELECT 
-        A.姓名代號
-        A.姓名
-        A.單位
-        A.車牌號碼
-        A.聯絡電話
-        A.身分註記
-        A.車位編號
+        A.姓名代號,
+        A.姓名,
+        A.單位,
+        A.車牌號碼,
+        A.聯絡電話,
+        A.身分註記,
+        A.車位編號,
+        B.車位備註,
         B.使用狀態
-        B.車位備註
     FROM 免申請 A
     INNER JOIN 停車位 B ON A.車位編號 = B.車位編號
     """
@@ -163,7 +163,7 @@ def update_record(period, name_code, plate_binding):
     conn.commit()
     conn.close()
 
-def update_record_car_id(period, name_code, car_id):
+def update_record(period, name_code, car_id):
     conn = connect_db()
     cursor = conn.cursor()
     update_query = """
@@ -388,7 +388,7 @@ with tab2:
             try:
                 for index, row in edited_df2.iterrows():
                     if row['更新資料']:
-                        update_record_car_id(row['期別'], row['姓名代號'], row['車牌號碼'])
+                        update_record(row['期別'], row['姓名代號'], row['車牌號碼'])
                 st.success('車牌更新成功')
             finally:
                 upload_db(local_db_path, db_file_id)
@@ -520,7 +520,10 @@ with tab6:
     uneditable_columns = ['車牌號碼']
     disabled_columns = [col for col in df7.columns if col in uneditable_columns]
         
-    edited_df6 = st.data_editor(
+    edited_df7 = st.data_editor(
+        df7,
+        disabled=disabled_columns,
+    )
         df7,
         disabled=disabled_columns
       )
