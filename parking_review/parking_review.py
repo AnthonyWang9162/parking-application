@@ -503,6 +503,6 @@ with tab6:
     disabled_columns = [col for col in df7.columns if col in uneditable_columns]
         
     edited_df6 = st.data_editor(
-        df6,
+        df7,
         disabled=disabled_columns
       )
