@@ -496,13 +496,9 @@ with tab5:
                 upload_db(local_db_path, db_file_id)
 
 with tab6:
-    st.header("地下停車一覽表")
-    # 姓名输入框
-    name = st.text_input("請輸入要篩選的姓名") 
+    st.header("地下停車一覽表") 
     df7 = load_data6()
     # 根據姓名篩選數據
-    if name:
-        df7 = df7[df7['姓名'].str.contains(name)]
     uneditable_columns = ['車牌號碼']
     disabled_columns = [col for col in df6.columns if col in uneditable_columns]
         
