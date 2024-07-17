@@ -460,7 +460,7 @@ with tab5:
         df6 = df6[df6['車位編號'].str.startswith('備取')]
     df6['更新車位資訊'] = False
     df6['更新繳費資訊'] = False
-    editable_columns = ['繳費狀態', '發票號碼', '更新車位資訊', '更新繳費資訊']
+    editable_columns = ['車位備註', '繳費狀態', '發票號碼', '更新車位資訊', '更新繳費資訊']
     options = ['已繳費', '未繳費', '放棄']
     disabled_columns = [col for col in df6.columns if col not in editable_columns]
         
