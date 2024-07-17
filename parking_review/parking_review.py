@@ -128,6 +128,14 @@ def load_data5(current):
     df = pd.read_sql_query(query, conn, params=(current,))
     conn.close()
     return df
+
+def load_data6():
+    conn = connect_db()
+    query = "SELECT * FROM 免申請"
+    df = pd.read_sql_query(query, conn)
+    conn.close()
+    return df
+
 # 更新数据库中的记录
 def update_record(period, name_code, plate_binding):
     conn = connect_db()
@@ -286,7 +294,7 @@ download_db(db_file_id, local_db_path)
 
 st.title("停車申請管理系統")
 # 创建选项卡
-tab1, tab2, tab4, tab5= st.tabs(["停車申請待審核", "本期停車申請一覽表", "免抽籤名單分配車位","本期員工停車繳費維護"])
+tab1, tab2, tab4, tab5, tab6= st.tabs(["停車申請待審核", "本期停車申請一覽表", "免抽籤名單分配車位", "本期員工停車繳費維護", "地下停車一覽表"])
 
 with tab1:
     st.header("停車申請待審核")
@@ -486,3 +494,19 @@ with tab5:
                         st.success('資料更新成功')
             finally:
                 upload_db(local_db_path, db_file_id)
+
+with tab6:
+    st.header("地下停車一覽表")
+    # 姓名输入框
+    name = st.text_input("請輸入要篩選的姓名") 
+    df7 = load_data6()
+    # 根據姓名篩選數據
+    if name:
+        df7 = df7[df7['姓名'].str.contains(name)]
+    uneditable_columns = ['車牌號碼']
+    disabled_columns = [col for col in df6.columns if col in uneditable_columns]
+        
+    edited_df6 = st.data_editor(
+        df6,
+        disabled=disabled_columns
+      )
