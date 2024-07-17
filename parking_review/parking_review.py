@@ -232,15 +232,15 @@ def parking_distribution(space_id, current, employee_id):
     conn.commit()
     conn.close()
 
-def update_payment(payment_status, bill_number, current, employee_id):
+def update_payment(car_id, payment_status, bill_number, current, employee_id):
     conn = connect_db()
     cursor = conn.cursor()
     update_query = """
     UPDATE 抽籤繳費
-    SET 繳費狀態 = ? , 發票號碼 = ?
+    SET 車位編號 = ? , 繳費狀態 = ? , 發票號碼 = ?
     WHERE 期別 = ?  AND 姓名代號 = ?
     """
-    cursor.execute(update_query, (payment_status, bill_number, current, employee_id))
+    cursor.execute(update_query, (car_id, payment_status, bill_number, current, employee_id))
     conn.commit()
     conn.close()
 
@@ -458,9 +458,9 @@ with tab5:
         df6 = df6[df6['車位編號'].str.startswith('B')]
     elif filter_option == "備取":
         df6 = df6[df6['車位編號'].str.startswith('備取')]
-    df6['更新車位資訊'] = False
+    df6['更新車位備註'] = False
     df6['更新繳費資訊'] = False
-    editable_columns = ['車位備註', '繳費狀態', '發票號碼', '更新車位資訊', '更新繳費資訊']
+    editable_columns = ['繳費狀態', '發票號碼', '更新車位備註', '更新繳費資訊']
     options = ['已繳費', '未繳費', '放棄']
     disabled_columns = [col for col in df6.columns if col not in editable_columns]
         
@@ -482,15 +482,15 @@ with tab5:
             try:
                 for index, row in edited_df6.iterrows():
                     if row['更新繳費資訊']:
-                        update_payment(row['繳費狀態'], row['發票號碼'], row['期別'], row['姓名代號'])
+                        update_payment(row['車位編號'], row['繳費狀態'], row['發票號碼'], row['期別'], row['姓名代號'])
                         st.success('資料更新成功')
             finally:
                 upload_db(local_db_path, db_file_id)
     with button2:
-        if st.button('更新車位資訊確認'):
+        if st.button('更新車位備註確認'):
             try:
                 for index, row in edited_df6.iterrows():
-                    if row['更新車位資訊']:
+                    if row['更新車位備註']:
                         update_parking_note(row['車位編號'],  row['車位備註'])
                         st.success('資料更新成功')
             finally:
