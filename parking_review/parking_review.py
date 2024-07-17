@@ -140,8 +140,8 @@ def load_data6():
         A.聯絡電話,
         A.身分註記,
         A.車位編號,
-        B.使用狀態,
-        B.車位備註
+        B.車位備註,
+        B.使用狀態
     FROM 免申請 A
     INNER JOIN 停車位 B ON A.車位編號 = B.車位編號
     """
@@ -523,7 +523,4 @@ with tab6:
     edited_df7 = st.data_editor(
         df7,
         disabled=disabled_columns,
-        column_config={
-            '車位備註': st.column_config.Column(width='2000px')
-        }
     )
