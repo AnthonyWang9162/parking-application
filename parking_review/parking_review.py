@@ -524,6 +524,3 @@ with tab6:
         df7,
         disabled=disabled_columns,
     )
-        df7,
-        disabled=disabled_columns
-      )
