@@ -500,7 +500,7 @@ with tab6:
     df7 = load_data6()
     # 根據姓名篩選數據
     uneditable_columns = ['車牌號碼']
-    disabled_columns = [col for col in df6.columns if col in uneditable_columns]
+    disabled_columns = [col for col in df7.columns if col in uneditable_columns]
         
     edited_df6 = st.data_editor(
         df6,
