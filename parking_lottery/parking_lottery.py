@@ -70,7 +70,7 @@ def perform_lottery(current):
 
     results_df = pd.DataFrame([(unit, mask_name(name), space) for space, (unit, name, employee_id) in results],
                               columns=['單位', '姓名', '車位號碼'])
-    waitlist_df = pd.DataFrame([(unit, mask_name(name), f"備取{i+1}") for i, (unit, name, employee_id) in enumerate(waitlist)],
+    waitlist_df = pd.DataFrame([(unit, mask_name(name), f"備取{str(i+1).zfill(2)}") for i, (unit, name, employee_id) in enumerate(waitlist)],
                                columns=['單位', '姓名', '車位號碼'])
 
     combined_df = pd.concat([results_df, waitlist_df], ignore_index=True)
@@ -85,12 +85,12 @@ def insert_lottery_results(current, results, waitlist):
                         (current, employee_id, space))
 
         for i, (unit, name, employee_id) in enumerate(waitlist):
-            backup_space_id = f"備取{i+1}"
+            backup_space_id = f"備取{str(i+1).zfill(2)}" if i < 9 else f"備取{i+1}"
             cursor.execute("INSERT INTO 抽籤繳費 (期別, 姓名代號, 車位編號, 繳費狀態) VALUES (?, ?, ?, '未繳費')",
                         (current, employee_id, backup_space_id))
     finally:
         conn.commit()
-        db_file_path = '/tmp/test.db'
+        db_file_path = '/tmp/抽籤管理系統.db'
         upload_db(db_file_path, '1_TArAUZyzzZuLX3y320VpytfBlaoUGBB')  # 替换为你的数据库文件 ID
         conn.close()
 
