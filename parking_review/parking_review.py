@@ -141,6 +141,18 @@ def update_record(period, name_code, plate_binding):
     conn.commit()
     conn.close()
 
+def update_record(period, name_code, car_id):
+    conn = connect_db()
+    cursor = conn.cursor()
+    update_query = """
+    UPDATE 申請紀錄
+    SET 車牌號碼 = ?
+    WHERE 期別 = ? AND 姓名代號 = ?
+    """
+    cursor.execute(update_query, (car_id, period, name_code))
+    conn.commit()
+    conn.close()
+
 # 删除数据库中的记录
 def delete_record(period, name_code):
     conn = connect_db()
@@ -307,12 +319,13 @@ with tab2:
     df2 = load_data2(current)
     if name:
         df2 = df2[df2['姓名'].str.contains(name)]
+    df2['更新資料'] = False
     df2['刪除資料'] = False
-    editable_columns = ['刪除資料']
+    editable_columns = ['車牌號碼','更新資料','刪除資料']
     disabled_columns = [col for col in df2.columns if col not in editable_columns]
     edited_df2 = st.data_editor(df2, disabled=disabled_columns, key="data_editor_tab2")
     
-    button1, button2 = st.columns(2)
+    button1, button2, button3 = st.columns(2)
     
     with button1:
         if st.button('刪除確認', key="delete_confirm_button"):
@@ -333,6 +346,16 @@ with tab2:
                 st.success('免抽籤資料匯入成功')
             except:
                 st.error('本期免抽籤資料已經匯入進繳費表')
+            finally:
+                upload_db(local_db_path, db_file_id)
+
+    with button3:
+        if st.button('更新確認', key="update_confirm_button"):
+            try:
+                for index, row in edited_df2.iterrows():
+                    if row['更新資料']:
+                        update_record(row['期別'], row['姓名代號'], row['車牌號碼'])
+                st.success('車牌更新成功')
             finally:
                 upload_db(local_db_path, db_file_id)
 with tab4:
