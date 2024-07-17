@@ -498,7 +498,7 @@ with tab5:
 with tab6:
     st.header("地下停車一覽表") 
     # 姓名输入框
-    name = st.text_input("請輸入要篩選的姓名") 
+    name = st.text_input("請輸入要篩選的姓名", key="text_input_name_tab6") 
     df7 = load_data6()
     # 根據姓名篩選數據
     if name:
