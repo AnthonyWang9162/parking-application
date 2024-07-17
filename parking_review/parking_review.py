@@ -520,7 +520,10 @@ with tab6:
     uneditable_columns = ['車牌號碼']
     disabled_columns = [col for col in df7.columns if col in uneditable_columns]
         
-    edited_df6 = st.data_editor(
+    edited_df7 = st.data_editor(
         df7,
-        disabled=disabled_columns
-      )
+        disabled=disabled_columns,
+        column_config={
+            '車位備註': st.column_config.Column(width='500px')
+        }
+    )
