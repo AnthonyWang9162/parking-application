@@ -458,9 +458,8 @@ with tab5:
         df6 = df6[df6['車位編號'].str.startswith('B')]
     elif filter_option == "備取":
         df6 = df6[df6['車位編號'].str.startswith('備取')]
-    df6['更新車位備註'] = False
-    df6['更新繳費資訊'] = False
-    editable_columns = ['車位編號', '車位備註', '繳費狀態', '發票號碼', '更新車位備註', '更新繳費資訊']
+    df6['更新資訊'] = False
+    editable_columns = ['繳費狀態', '發票號碼', '更新資訊']
     options = ['已繳費', '未繳費', '放棄']
     disabled_columns = [col for col in df6.columns if col not in editable_columns]
         
@@ -478,19 +477,11 @@ with tab5:
     )
     button1, button2 = st.columns(2)
     with button1:
-        if st.button('更新繳費資訊確認'):
+        if st.button('更新資訊確認'):
             try:
                 for index, row in edited_df6.iterrows():
                     if row['更新繳費資訊']:
                         update_payment(row['車位編號'], row['繳費狀態'], row['發票號碼'], row['期別'], row['姓名代號'])
-                        st.success('資料更新成功')
-            finally:
-                upload_db(local_db_path, db_file_id)
-    with button2:
-        if st.button('更新車位備註確認'):
-            try:
-                for index, row in edited_df6.iterrows():
-                    if row['更新車位備註']:
                         update_parking_note(row['車位編號'],  row['車位備註'])
                         st.success('資料更新成功')
             finally:
