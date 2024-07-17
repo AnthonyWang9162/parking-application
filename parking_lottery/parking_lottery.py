@@ -16,7 +16,7 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
 
 # 获取字体文件路径
-FONT_PATH = 'NotoSansTC-SemiBold.ttf'  # 确保将字体文件上传到 Streamlit Cloud 的文件夹
+FONT_PATH = 'parking_lottery/NotoSansTC-SemiBold.ttf'  # 确保将字体文件上传到 Streamlit Cloud 的文件夹
 
 # 设置 Google Drive API 凭据
 creds = Credentials.from_service_account_info(st.secrets["google_drive"])
