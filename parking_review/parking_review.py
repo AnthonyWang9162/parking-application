@@ -325,7 +325,7 @@ with tab2:
     disabled_columns = [col for col in df2.columns if col not in editable_columns]
     edited_df2 = st.data_editor(df2, disabled=disabled_columns, key="data_editor_tab2")
     
-    button1, button2, button3 = st.columns(2)
+    button1, button2, button3 = st.columns(3)
     
     with button1:
         if st.button('刪除確認', key="delete_confirm_button"):
