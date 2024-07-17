@@ -133,14 +133,14 @@ def load_data6():
     conn = connect_db()
     query = """
     SELECT 
-        A.姓名代號
-        A.姓名
-        A.單位
-        A.車牌號碼
-        A.聯絡電話
-        A.身分註記
-        A.車位編號
-        B.使用狀態
+        A.姓名代號,
+        A.姓名,
+        A.單位,
+        A.車牌號碼,
+        A.聯絡電話,
+        A.身分註記,
+        A.車位編號,
+        B.使用狀態,
         B.車位備註
     FROM 免申請 A
     INNER JOIN 停車位 B ON A.車位編號 = B.車位編號
