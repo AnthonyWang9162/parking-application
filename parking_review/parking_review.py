@@ -163,7 +163,7 @@ def update_record(period, name_code, plate_binding):
     conn.commit()
     conn.close()
 
-def update_record(period, name_code, car_id):
+def update_record_car_id(period, name_code, car_id):
     conn = connect_db()
     cursor = conn.cursor()
     update_query = """
@@ -388,7 +388,7 @@ with tab2:
             try:
                 for index, row in edited_df2.iterrows():
                     if row['更新資料']:
-                        update_record(row['期別'], row['姓名代號'], row['車牌號碼'])
+                        update_record_car_id(row['期別'], row['姓名代號'], row['車牌號碼'])
                 st.success('車牌更新成功')
             finally:
                 upload_db(local_db_path, db_file_id)
