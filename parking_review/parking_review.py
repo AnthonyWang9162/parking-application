@@ -480,7 +480,7 @@ with tab5:
         if st.button('更新資訊確認'):
             try:
                 for index, row in edited_df6.iterrows():
-                    if row['更新繳費資訊']:
+                    if row['更新資訊']:
                         update_payment(row['車位編號'], row['繳費狀態'], row['發票號碼'], row['期別'], row['姓名代號'])
                         update_parking_note(row['車位編號'],  row['車位備註'])
                         st.success('資料更新成功')
