@@ -147,7 +147,7 @@ def load_data6():
     INNER JOIN 停車位 B ON A.車位編號 = B.車位編號
     """
     
-    df = pd.read_sql_query(query, conn, params=(current,))
+    df = pd.read_sql_query(query, conn)
     conn.close()
     return df
 
