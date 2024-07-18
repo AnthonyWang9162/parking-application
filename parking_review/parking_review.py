@@ -59,6 +59,18 @@ def get_quarter(year, month):
         raise ValueError("Month must be between 1 and 12")
     return year, quarter
 
+def get_actual_quarter(month):
+    if 1 <= month <= 3:
+        quarter = 1
+    elif 4 <= month <= 6:
+        quarter = 2
+    elif 7 <= month <= 9:
+        quarter = 3
+    elif 10 <= month <= 12:
+        quarter = 4
+    else:
+        raise ValueError("Month must be between 1 and 12")
+    return quarter
 # 读取申请记录表
 
 def load_data1():
@@ -527,9 +539,11 @@ with tab5:
 
 with tab6:
     st.header("地下停車一覽表") 
+    actual_quarter = get_actual_quarter(today.month)
+    actual_current = f"{Taiwan_year}{actual_quarter:02}"
     # 姓名输入框
     name = st.text_input("請輸入要篩選的姓名", key="text_input_name_tab6") 
-    df7 = load_data6(current)
+    df7 = load_data6(actual_current)
     # 根據姓名篩選數據
     if name:
         df7 = df7[df7['姓名'].str.contains(name)]
