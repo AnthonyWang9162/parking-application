@@ -348,7 +348,7 @@ with tab1:
     edited_df1 = st.data_editor(df1, disabled=disabled_columns)
     
     if st.button('審核確認'):
-        not_passed_df = pd.DataFrame()
+        not_passed_list = []
         try:
             for index, row in edited_df1.iterrows():
                 if row['通過'] and row['不通過']:
@@ -369,11 +369,12 @@ with tab1:
                     if row['身分註記'] != '一般':
                         insert_parking_fee(current, row['姓名代號'])
                 elif row['不通過']:
-                    not_passed_df = not_passed_df.append(row)
+                    not_passed_list.append(row)
         finally:
             upload_db(local_db_path, db_file_id)
 
-        if not not_passed_df.empty:
+        if not_passed_list:
+            not_passed_df = pd.DataFrame(not_passed_list)
             st.write("以下是審核不通過的申請，請確認是否確定不通過：")
             for index, row in not_passed_df.iterrows():
                 if st.button(f"確認不通過 - {row['姓名']} ({row['車牌號碼']})", key=f"confirm_button_{index}"):
