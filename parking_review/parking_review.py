@@ -370,8 +370,12 @@ with tab1:
                 elif row['不通過']:
                     if f"confirm_{index}" not in st.session_state:
                         st.session_state[f"confirm_{index}"] = False
+
                     if not st.session_state[f"confirm_{index}"]:
-                        st.session_state[f"confirm_{index}"] = st.checkbox(f"確定不通過 {row['姓名']} 的申請？", key=f"confirm_{index}")
+                        confirm_checkbox = st.checkbox(f"確定不通過 {row['姓名']} 的申請？", key=f"confirm_checkbox_{index}")
+                        if confirm_checkbox:
+                            st.session_state[f"confirm_{index}"] = True
+
                     if st.session_state[f"confirm_{index}"]:
                         subject_text = '本期停車申請文件未審核通過通知'
                         text = '您申請的資料不符合停車要點規定，造成困擾敬請見諒。'
@@ -380,7 +384,6 @@ with tab1:
                         st.success("審核完成")
         finally:
             upload_db(local_db_path, db_file_id)
-
 with tab2:
     st.header(f"{current}停車申請一覽表")
     name = st.text_input("請輸入要篩選的姓名", key="name_input_tab2") 
