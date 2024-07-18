@@ -191,15 +191,15 @@ def update_record(period, name_code, plate_binding):
     conn.commit()
     conn.close()
 
-def update_record_car_id(period, name_code, car_id):
+def update_record_car_id(period, name_code, car_id, contact_number):
     conn = connect_db()
     cursor = conn.cursor()
     update_query = """
     UPDATE 申請紀錄
-    SET 車牌號碼 = ?
+    SET 車牌號碼 = ? , 聯絡電話 = ?
     WHERE 期別 = ? AND 姓名代號 = ?
     """
-    cursor.execute(update_query, (car_id, period, name_code))
+    cursor.execute(update_query, (car_id, contact_number, period, name_code))
     conn.commit()
     conn.close()
 
@@ -383,7 +383,7 @@ with tab2:
         df2 = df2[df2['姓名'].str.contains(name)]
     df2['更新資料'] = False
     df2['刪除資料'] = False
-    editable_columns = ['車牌號碼','更新資料','刪除資料']
+    editable_columns = ['車牌號碼','聯絡電話','更新資料','刪除資料']
     disabled_columns = [col for col in df2.columns if col not in editable_columns]
     edited_df2 = st.data_editor(df2, disabled=disabled_columns, key="data_editor_tab2")
     
@@ -416,7 +416,7 @@ with tab2:
             try:
                 for index, row in edited_df2.iterrows():
                     if row['更新資料']:
-                        update_record_car_id(row['期別'], row['姓名代號'], row['車牌號碼'])
+                        update_record_car_id(row['期別'], row['姓名代號'], row['車牌號碼'], row['聯絡電話'])
                 st.success('車牌更新成功')
             finally:
                 upload_db(local_db_path, db_file_id)
