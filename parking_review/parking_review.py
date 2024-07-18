@@ -348,6 +348,7 @@ with tab1:
     edited_df1 = st.data_editor(df1, disabled=disabled_columns)
     
     if st.button('審核確認'):
+        not_passed_df = pd.DataFrame()
         try:
             for index, row in edited_df1.iterrows():
                 if row['通過'] and row['不通過']:
@@ -368,22 +369,20 @@ with tab1:
                     if row['身分註記'] != '一般':
                         insert_parking_fee(current, row['姓名代號'])
                 elif row['不通過']:
-                    if f"confirm_{index}" not in st.session_state:
-                        st.session_state[f"confirm_{index}"] = False
-
-                    if not st.session_state[f"confirm_{index}"]:
-                        confirm_checkbox = st.checkbox(f"確定不通過 {row['姓名']} 的申請？", key=f"confirm_checkbox_{index}")
-                        if confirm_checkbox:
-                            st.session_state[f"confirm_{index}"] = True
-
-                    if st.session_state[f"confirm_{index}"]:
-                        subject_text = '本期停車申請文件未審核通過通知'
-                        text = '您申請的資料不符合停車要點規定，造成困擾敬請見諒。'
-                        send_email(row['姓名代號'], row['姓名'], text, subject_text)
-                        delete_record(row['期別'], row['姓名代號'])
-                        st.success("審核完成")
+                    not_passed_df = not_passed_df.append(row)
         finally:
             upload_db(local_db_path, db_file_id)
+
+        if not not_passed_df.empty:
+            st.write("以下是審核不通過的申請，請確認是否確定不通過：")
+            for index, row in not_passed_df.iterrows():
+                if st.button(f"確認不通過 - {row['姓名']} ({row['車牌號碼']})", key=f"confirm_button_{index}"):
+                    subject_text = '本期停車申請文件未審核通過通知'
+                    text = '您申請的資料不符合停車要點規定，造成困擾敬請見諒。'
+                    send_email(row['姓名代號'], row['姓名'], text, subject_text)
+                    delete_record(row['期別'], row['姓名代號'])
+                    st.success(f"審核不通過已確認 - {row['姓名']} ({row['車牌號碼']})")
+                    upload_db(local_db_path, db_file_id)
 with tab2:
     st.header(f"{current}停車申請一覽表")
     name = st.text_input("請輸入要篩選的姓名", key="name_input_tab2") 
