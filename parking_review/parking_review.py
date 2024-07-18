@@ -346,8 +346,11 @@ with tab1:
     editable_columns = ['通過', '不通過']
     disabled_columns = [col for col in df1.columns if col not in editable_columns]
     edited_df1 = st.data_editor(df1, disabled=disabled_columns)
-    
-    not_passed_list = []
+
+    # 使用 session state 管理未通過的列表
+    if 'not_passed_list' not in st.session_state:
+        st.session_state.not_passed_list = []
+
     if st.button('審核確認'):
         try:
             for index, row in edited_df1.iterrows():
@@ -369,20 +372,20 @@ with tab1:
                     if row['身分註記'] != '一般':
                         insert_parking_fee(current, row['姓名代號'])
                 elif row['不通過']:
-                    not_passed_list.append(row)
+                    st.session_state.not_passed_list.append(row.to_dict())
         finally:
             upload_db(local_db_path, db_file_id)
 
-    if not_passed_list:
-        not_passed_df = pd.DataFrame(not_passed_list)
+    if st.session_state.not_passed_list:
         st.write("以下是審核不通過的申請，請確認是否確定不通過：")
-        for index, row in not_passed_df.iterrows():
-            if st.button(f"確認不通過 - {row['姓名']} ({row['車牌號碼']})", key=f"confirm_button_{index}"):
+        for i, record in enumerate(st.session_state.not_passed_list):
+            if st.button(f"確認不通過 - {record['姓名']} ({record['車牌號碼']})", key=f"confirm_button_{i}"):
                 subject_text = '本期停車申請文件未審核通過通知'
                 text = '您申請的資料不符合停車要點規定，造成困擾敬請見諒。'
-                send_email(row['姓名代號'], row['姓名'], text, subject_text)
-                delete_record(row['期別'], row['姓名代號'])
-                st.success(f"審核不通過已確認 - {row['姓名']} ({row['車牌號碼']})")
+                send_email(record['姓名代號'], record['姓名'], text, subject_text)
+                delete_record(record['期別'], record['姓名代號'])
+                st.session_state.not_passed_list.pop(i)  # 移除已處理的記錄
+                st.success(f"審核不通過已確認 - {record['姓名']} ({record['車牌號碼']})")
                 upload_db(local_db_path, db_file_id)
                 st.experimental_rerun()  # 重新運行腳本，刷新頁面
 with tab2:
