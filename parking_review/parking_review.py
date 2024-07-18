@@ -157,7 +157,7 @@ def load_data6(current):
         E.使用狀態,
         E.車位備註
     FROM 申請紀錄 C
-    INNER JOIN 繳費紀錄 D ON C.期別 = D.期別 AND C.姓名代號 = D.姓名代號
+    LEFT JOIN 繳費紀錄 D ON C.期別 = D.期別 AND C.姓名代號 = D.姓名代號
     INNER JOIN 停車位 E ON D.車位編號 = E.車位編號
     WHERE C.期別 = ?
     """
