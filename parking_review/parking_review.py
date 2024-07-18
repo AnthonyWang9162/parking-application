@@ -336,7 +336,7 @@ download_db(db_file_id, local_db_path)
 
 st.title("停車申請管理系統")
 # 创建选项卡
-tab1, tab2, tab4, tab5, tab6= st.tabs(["停車申請待審核", f"{current}停車申請一覽表", "免抽籤名單分配車位", f"{current}員工停車繳費維護", "地下停車一覽表"])
+tab1, tab2, tab4, tab5, tab6= st.tabs(["停車申請待審核", f"{current}停車申請一覽表", "保障停車分配車位", f"{current}員工停車繳費維護", "地下停車一覽表"])
 
 with tab1:
     st.header("停車申請待審核")
@@ -400,7 +400,7 @@ with tab2:
                 upload_db(local_db_path, db_file_id)
                 
     with button2:
-        if st.button('免抽籤準備分配車位', key="prepare_parking_button"):
+        if st.button('保障停車準備分配車位', key="prepare_parking_button"):
             try:
                 for index, row in edited_df2.iterrows():
                     if row['身分註記'] != '一般' and row['車牌綁定'] == True:
@@ -464,7 +464,7 @@ with tab4:
         finally:
             upload_db(local_db_path, db_file_id)
 
-    st.header("免抽籤名單分配車位")
+    st.header("保障停車分配車位")
     df5 = load_data4(current)
     df5['分配車位'] = False
     editable_column = ['車位編號','分配車位']
