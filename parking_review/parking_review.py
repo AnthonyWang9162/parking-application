@@ -129,7 +129,7 @@ def load_data5(current):
     conn.close()
     return df
 
-def load_data6(current):
+def load_data6():
     conn = connect_db()
     
     query = """
@@ -145,21 +145,6 @@ def load_data6(current):
         B.車位備註
     FROM 免申請 A
     INNER JOIN 停車位 B ON A.車位編號 = B.車位編號
-    UNION
-    SELECT 
-        C.姓名代號,
-        C.姓名,
-        C.單位,
-        C.車牌號碼,
-        C.聯絡電話,
-        C.身分註記,
-        D.車位編號,
-        E.使用狀態,
-        E.車位備註
-    FROM 申請紀錄 C
-    LEFT JOIN 繳費紀錄 D ON C.期別 = D.期別 AND C.姓名代號 = D.姓名代號
-    INNER JOIN 停車位 E ON D.車位編號 = E.車位編號
-    WHERE C.期別 = ?
     """
     
     df = pd.read_sql_query(query, conn, params=(current,))
@@ -529,7 +514,7 @@ with tab6:
     st.header("地下停車一覽表") 
     # 姓名输入框
     name = st.text_input("請輸入要篩選的姓名", key="text_input_name_tab6") 
-    df7 = load_data6(current)
+    df7 = load_data6()
     # 根據姓名篩選數據
     if name:
         df7 = df7[df7['姓名'].str.contains(name)]
