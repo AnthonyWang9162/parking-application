@@ -324,7 +324,7 @@ download_db(db_file_id, local_db_path)
 
 st.title("停車申請管理系統")
 # 创建选项卡
-tab1, tab2, tab4, tab5, tab6= st.tabs(["停車申請待審核", "本期停車申請一覽表", "免抽籤名單分配車位", "本期員工停車繳費維護", "地下停車一覽表"])
+tab1, tab2, tab4, tab5, tab6= st.tabs(["停車申請待審核", f"{current}停車申請一覽表", "免抽籤名單分配車位", f"{current}員工停車繳費維護", "地下停車一覽表"])
 
 with tab1:
     st.header("停車申請待審核")
@@ -364,7 +364,7 @@ with tab1:
             upload_db(local_db_path, db_file_id)
 
 with tab2:
-    st.header("本期停車申請一覽表")
+    st.header(f"{current}停車申請一覽表")
     name = st.text_input("請輸入要篩選的姓名", key="name_input_tab2") 
     df2 = load_data2(current)
     if name:
@@ -471,7 +471,7 @@ with tab4:
         finally:
             upload_db(local_db_path, db_file_id)
 with tab5:
-    st.header("本期員工停車繳費維護")
+    st.header(f"{current}員工停車繳費維護")
 
     # 姓名输入框
     name = st.text_input("請輸入要篩選的姓名") 
