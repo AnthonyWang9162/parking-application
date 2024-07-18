@@ -524,4 +524,8 @@ with tab6:
     edited_df7 = st.data_editor(
         df7,
         disabled=disabled_columns,
+        column_config={
+            "車位備註": st.column_config.TextColumn(
+            width="auto"
     )
+    })
