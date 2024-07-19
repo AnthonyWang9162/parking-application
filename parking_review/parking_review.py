@@ -556,6 +556,8 @@ with tab6:
     actual_current = f"{Taiwan_year}{actual_quarter:02}"
     # 姓名输入框
     name = st.text_input("請輸入要篩選的姓名", key="text_input_name_tab6") 
+    # 定義下拉選單選項
+    options = ["公務車", "公務車(電動)", "值班", "高階主管", "獨董", "公務保留", "身心障礙", "孕婦", "保障", "抽籤"]
     df7 = load_data6(actual_current)
     # 根據姓名篩選數據
     if name:
@@ -566,4 +568,12 @@ with tab6:
     edited_df7 = st.data_editor(
         df7,
         disabled=disabled_columns,
+        column_config={
+            "使用狀態": st.column_config.SelectboxColumn(
+                "使用狀態",
+                options=options,
+                help="請選擇該車位用途",
+                required=True
+            )
+        }
     )
