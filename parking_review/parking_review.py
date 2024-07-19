@@ -569,7 +569,13 @@ with tab6:
         df7,
         disabled=disabled_columns,
         column_config={
-            "使用狀態": st.column_config.SelectboxColumn(
+            "身分註記": st.column_config.SelectboxColumn(
+                "身分註記",
+                options=options,
+                help="請選擇要調整的身分註記",
+                required=True
+            )
+            ,"使用狀態": st.column_config.SelectboxColumn(
                 "使用狀態",
                 options=options,
                 help="請選擇該車位用途",
