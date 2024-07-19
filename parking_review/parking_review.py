@@ -191,15 +191,27 @@ def update_record(period, name_code, plate_binding):
     conn.commit()
     conn.close()
 
-def update_record_car_id(period, name_code, car_id, contact_number):
+def update_application_record(period, name, unit, name_code, car_id, contact_number):
     conn = connect_db()
     cursor = conn.cursor()
     update_query = """
     UPDATE 申請紀錄
-    SET 車牌號碼 = ? , 聯絡電話 = ?
+    SET 姓名 = ? , 單位 = ? , 車牌號碼 = ? , 聯絡電話 = ? 
     WHERE 期別 = ? AND 姓名代號 = ?
     """
-    cursor.execute(update_query, (car_id, contact_number, period, name_code))
+    cursor.execute(update_query, (name, unit, car_id, contact_number, period, name_code))
+    conn.commit()
+    conn.close()
+
+def update_no_lottery(name, unit, contact_number, identity_note, space_id, car_id):
+    conn = connect_db()
+    cursor = conn.cursor()
+    update_query = """
+    UPDATE 免抽籤
+    SET 姓名 = ? , 單位 = ? , 聯絡電話 = ? , 身分註記 = ? 車位編號 = ?
+    WHERE 車牌號碼 = ? 
+    """
+    cursor.execute(update_query, (name, unit, contact_number, identity_note, space_id, car_id))
     conn.commit()
     conn.close()
 
@@ -219,6 +231,15 @@ def new_approved_car_record(employee_id, car_number):
     conn = connect_db()
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM 使用者車牌 WHERE 姓名代號 = ? AND 車牌號碼 = ?", (employee_id, car_number))
+    output = cursor.fetchone()
+    conn.commit()
+    conn.close()
+    return output is None
+
+def exist_no_lottery(car_number):
+    conn = connect_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM 免抽籤 WHERE 車牌號碼 = ?", (car_number))
     output = cursor.fetchone()
     conn.commit()
     conn.close()
@@ -346,11 +367,6 @@ with tab1:
     editable_columns = ['通過', '不通過']
     disabled_columns = [col for col in df1.columns if col not in editable_columns]
     edited_df1 = st.data_editor(df1, disabled=disabled_columns)
-
-    # 使用 session state 管理未通過的列表
-    if 'not_passed_list' not in st.session_state:
-        st.session_state.not_passed_list = []
-
     if st.button('審核確認'):
         try:
             for index, row in edited_df1.iterrows():
@@ -372,22 +388,14 @@ with tab1:
                     if row['身分註記'] != '一般':
                         insert_parking_fee(current, row['姓名代號'])
                 elif row['不通過']:
-                    st.session_state.not_passed_list.append(row.to_dict())
+                    subject_text = '本期停車申請文件未審核通過通知'
+                    text = '您申請的資料不符合停車要點規定，造成困擾敬請見諒。'
+                    send_email(row['姓名代號'], row['姓名'], text, subject_text)
+                    delete_record(row['期別'], row['姓名代號'])
+                    st.success("審核完成")
         finally:
             upload_db(local_db_path, db_file_id)
 
-    if st.session_state.not_passed_list:
-        st.write("以下是審核不通過的申請，請確認是否確定不通過：")
-        for i, record in enumerate(st.session_state.not_passed_list):
-            if st.button(f"確認不通過 - {record['姓名']} ({record['車牌號碼']})", key=f"confirm_button_{i}"):
-                subject_text = '本期停車申請文件未審核通過通知'
-                text = '您申請的資料不符合停車要點規定，造成困擾敬請見諒。'
-                send_email(record['姓名代號'], record['姓名'], text, subject_text)
-                delete_record(record['期別'], record['姓名代號'])
-                st.session_state.not_passed_list.pop(i)  # 移除已處理的記錄
-                st.success(f"審核不通過已確認 - {record['姓名']} ({record['車牌號碼']})")
-                upload_db(local_db_path, db_file_id)
-                st.experimental_rerun()  # 重新運行腳本，刷新頁面
 with tab2:
     st.header(f"{current}停車申請一覽表")
     name = st.text_input("請輸入要篩選的姓名", key="name_input_tab2") 
@@ -429,7 +437,7 @@ with tab2:
             try:
                 for index, row in edited_df2.iterrows():
                     if row['更新資料']:
-                        update_record_car_id(row['期別'], row['姓名代號'], row['車牌號碼'], row['聯絡電話'])
+                        update_application_record(row['期別'], row['姓名'], row['單位'], row['姓名代號'], row['車牌號碼'], row['聯絡電話'])
                 st.success('車牌更新成功')
             finally:
                 upload_db(local_db_path, db_file_id)
@@ -582,3 +590,15 @@ with tab6:
             )
         }
     )
+    if st.button('更新資訊確認'):
+        try:
+            for index, row in edited_df7.iterrows():
+                if row['更新資訊']:
+                    update_parking_note(row['車位編號'],  row['車位備註'])
+                    if exist_no_lottery(row['車牌號碼']):
+                        update_no_lottery(row['姓名'], row['單位'], row['聯絡電話'], row['身分註記'], row['車位編號'], row['車牌號碼'])
+                        st.success('資料更新成功')
+                    else:
+                        update_application_record(actual_current, row['姓名'], row['單位'], row['姓名代號'], row['車牌號碼'], row['聯絡電話'])
+        finally:
+            upload_db(local_db_path, db_file_id)
