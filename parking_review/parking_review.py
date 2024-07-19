@@ -243,7 +243,7 @@ def exist_no_lottery(car_number):
     output = cursor.fetchone()
     conn.commit()
     conn.close()
-    return output is None
+    return output is not None
 
 def insert_car_approved_record(employee_id, car_number):
     conn = connect_db()
