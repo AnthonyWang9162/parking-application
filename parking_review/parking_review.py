@@ -239,7 +239,7 @@ def new_approved_car_record(employee_id, car_number):
 def exist_no_lottery(car_number):
     conn = connect_db()
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM 免抽籤 WHERE 車牌號碼 = ?", (car_number,))
+    cursor.execute("SELECT * FROM 免申請 WHERE 車牌號碼 = ?", (car_number,))
     output = cursor.fetchone()
     conn.commit()
     conn.close()
