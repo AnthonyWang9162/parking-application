@@ -538,17 +538,15 @@ with tab5:
             )
         }
     )
-    button1, button2 = st.columns(2)
-    with button1:
-        if st.button('更新資訊確認'):
-            try:
-                for index, row in edited_df6.iterrows():
-                    if row['更新資訊']:
-                        update_payment(row['車位編號'], row['繳費狀態'], row['發票號碼'], row['期別'], row['姓名代號'])
-                        update_parking_note(row['車位編號'],  row['車位備註'])
-                        st.success('資料更新成功')
-            finally:
-                upload_db(local_db_path, db_file_id)
+    if st.button('更新資訊確認'):
+        try:
+            for index, row in edited_df6.iterrows():
+                if row['更新資訊']:
+                    update_payment(row['車位編號'], row['繳費狀態'], row['發票號碼'], row['期別'], row['姓名代號'])
+                    update_parking_note(row['車位編號'],  row['車位備註'])
+                    st.success('資料更新成功')
+        finally:
+            upload_db(local_db_path, db_file_id)
 
 with tab6:
     st.header("地下停車一覽表") 
@@ -559,6 +557,7 @@ with tab6:
     # 定義下拉選單選項
     options = ["公務車", "公務車(電動)", "值班", "高階主管", "獨董", "公務保留", "身心障礙", "孕婦", "保障", "抽籤"]
     df7 = load_data6(actual_current)
+    df7['更新資訊'] = False
     # 根據姓名篩選數據
     if name:
         df7 = df7[df7['姓名'].str.contains(name)]
