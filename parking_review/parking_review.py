@@ -208,7 +208,7 @@ def update_no_lottery(name, unit, contact_number, identity_note, space_id, car_i
     cursor = conn.cursor()
     update_query = """
     UPDATE 免申請
-    SET 姓名 = ? , 單位 = ? , 聯絡電話 = ? , 身分註記 = ? 車位編號 = ?
+    SET 姓名 = ? , 單位 = ? , 聯絡電話 = ? , 身分註記 = ?, 車位編號 = ?
     WHERE 車牌號碼 = ? 
     """
     cursor.execute(update_query, (name, unit, contact_number, identity_note, space_id, car_id))
