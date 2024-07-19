@@ -207,8 +207,8 @@ def update_no_lottery(name, unit, contact_number, identity_note, space_id, car_i
     conn = connect_db()
     cursor = conn.cursor()
     update_query = """
-    UPDATE 免申請
-    SET 姓名 = ? , 單位 = ? , 聯絡電話 = ? , 身分註記 = ?, 車位編號 = ?
+    UPDATE 免抽籤
+    SET 姓名 = ? , 單位 = ? , 聯絡電話 = ? , 身分註記 = ? 車位編號 = ?
     WHERE 車牌號碼 = ? 
     """
     cursor.execute(update_query, (name, unit, contact_number, identity_note, space_id, car_id))
@@ -312,6 +312,18 @@ def update_payment(car_id, payment_status, bill_number, current, employee_id):
     WHERE 期別 = ?  AND 姓名代號 = ?
     """
     cursor.execute(update_query, (car_id, payment_status, bill_number, current, employee_id))
+    conn.commit()
+    conn.close()
+
+def update_confirm_parking(space_id, actual_current, employee_id):
+    conn = connect_db()
+    cursor = conn.cursor()
+    update_query = """
+    UPDATE 繳費紀錄
+    SET 車位編號 = ? 
+    WHERE 期別 = ? AND 姓名代號 = ? 
+    """
+    cursor.execute(update_query, (space_id, actual_current, employee_id))
     conn.commit()
     conn.close()
 
@@ -600,6 +612,6 @@ with tab6:
                         st.success('資料更新成功')
                     else:
                         update_application_record(actual_current, row['姓名'], row['單位'], row['姓名代號'], row['車牌號碼'], row['聯絡電話'])
-                        st.success('資料更新成功')
+                        update_confirm_parking(row['車位編號'], actual_current, row['姓名代號'])
         finally:
             upload_db(local_db_path, db_file_id)
