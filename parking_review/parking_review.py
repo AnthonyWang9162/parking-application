@@ -581,7 +581,7 @@ with tab6:
     # 根據姓名篩選數據
     if name:
         df7 = df7[df7['姓名'].str.contains(name)]
-    uneditable_columns = ['車牌號碼']
+    uneditable_columns = ['姓名代號','車牌號碼']
     disabled_columns = [col for col in df7.columns if col in uneditable_columns]
         
     edited_df7 = st.data_editor(
