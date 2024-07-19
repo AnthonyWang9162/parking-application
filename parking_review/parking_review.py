@@ -613,5 +613,6 @@ with tab6:
                     else:
                         update_application_record(actual_current, row['姓名'], row['單位'], row['姓名代號'], row['車牌號碼'], row['聯絡電話'])
                         update_confirm_parking(row['車位編號'], actual_current, row['姓名代號'])
+                        st.success('資料更新成功')
         finally:
             upload_db(local_db_path, db_file_id)
