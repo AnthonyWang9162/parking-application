@@ -595,10 +595,20 @@ with tab6:
     st.header("地下停車一覽表") 
     actual_quarter = get_actual_quarter(today.month)
     actual_current = f"{Taiwan_year}{actual_quarter:02}"
+    # 定義下拉選單選項
+    options = ["公務車", "公務車(電動)", "值班", "高階主管", "獨董", "公務保留", "身心障礙", "孕婦", "保障", "一般"]
+
+    # 添加篩選條件選擇框
+    filter_option = st.selectbox("篩選身分註記", ["所有"] + options)
+
+    # 根據篩選條件過濾數據框
+    if filter_option != "所有":
+        df4 = df4[df4['身分註記'] == filter_option]
     # 姓名输入框
     name = st.text_input("請輸入要篩選的姓名", key="text_input_name_tab6") 
     # 定義下拉選單選項
-    options = ["公務車", "公務車(電動)", "值班", "高階主管", "獨董", "公務保留", "身心障礙", "孕婦", "保障", "抽籤"]
+    options1 = ["公務車", "公務車(電動)", "值班", "高階主管", "獨董", "公務保留", "身心障礙", "孕婦", "保障", "一般"]
+    options2 = ["公務車", "公務車(電動)", "值班", "高階主管", "獨董", "公務保留", "身心障礙", "孕婦", "保障", "抽籤"]
     df7 = load_data6(actual_current)
     df7['更新資訊'] = False
     df7['刪除資訊'] = False
@@ -614,13 +624,13 @@ with tab6:
         column_config={
             "身分註記": st.column_config.SelectboxColumn(
                 "身分註記",
-                options=options,
+                options=options1,
                 help="請選擇要調整的身分註記",
                 required=True
             )
             ,"使用狀態": st.column_config.SelectboxColumn(
                 "使用狀態",
-                options=options,
+                options=options2,
                 help="請選擇該車位用途",
                 required=True
             )
