@@ -603,7 +603,7 @@ with tab6:
 
     # 根據篩選條件過濾數據框
     if filter_option != "所有":
-        df4 = df4[df4['身分註記'] == filter_option]
+        df7 = df7[df7['身分註記'] == filter_option]
     # 姓名输入框
     name = st.text_input("請輸入要篩選的姓名", key="text_input_name_tab6") 
     # 定義下拉選單選項
