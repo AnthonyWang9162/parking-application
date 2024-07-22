@@ -598,6 +598,10 @@ with tab6:
     # 定義下拉選單選項
     options = ["公務車", "公務車(電動)", "值班", "高階主管", "獨董", "公務保留", "身心障礙", "孕婦", "保障", "一般"]
 
+    df7 = load_data6(actual_current)
+    df7['更新資訊'] = False
+    df7['刪除資訊'] = False
+
     # 添加篩選條件選擇框
     filter_option = st.selectbox("篩選身分註記", ["所有"] + options)
 
@@ -609,9 +613,7 @@ with tab6:
     # 定義下拉選單選項
     options1 = ["公務車", "公務車(電動)", "值班", "高階主管", "獨董", "公務保留", "身心障礙", "孕婦", "保障", "一般"]
     options2 = ["公務車", "公務車(電動)", "值班", "高階主管", "獨董", "公務保留", "身心障礙", "孕婦", "保障", "抽籤"]
-    df7 = load_data6(actual_current)
-    df7['更新資訊'] = False
-    df7['刪除資訊'] = False
+
     # 根據姓名篩選數據
     if name:
         df7 = df7[df7['姓名'].str.contains(name)]
