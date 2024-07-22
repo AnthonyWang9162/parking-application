@@ -646,7 +646,7 @@ with tab5:
 
     # 根據篩選條件過濾數據框
     if filter_option2 != "所有":
-        df6 = df6[df6['繳費狀態'] == filter_option]
+        df6 = df6[df6['繳費狀態'] == filter_option2]
 
     # 根據姓名篩選數據
     if name:
@@ -660,6 +660,7 @@ with tab5:
         df6 = df6[df6['車位編號'].str.startswith('B')]
     elif filter_option1 == "備取":
         df6 = df6[df6['車位編號'].str.startswith('備取')]
+
     df6['更新資訊'] = False
     editable_columns = ['車位編號','車位備註','繳費狀態', '發票號碼', '更新資訊']
     options = ['已繳費', '未繳費', '放棄']
@@ -681,12 +682,12 @@ with tab5:
         try:
             for index, row in edited_df6.iterrows():
                 if row['更新資訊']:
-                    update_parking_note(row['車位編號'],  row['車位備註'])
+                    update_parking_note(row['車位編號'], row['車位備註'])
                     if exist_lottery_payment(current, row['姓名代號']):
-                        update_lottery_payment(row['車位編號'], row['繳費狀態'], row['發票號碼'], row['期別'], row['姓名代號'])
+                        update_lottery_payment(row['車位編號'], row['繳費狀態'], row['發票號碼'], current, row['姓名代號'])
                         st.success('資料更新成功')
                     else:
-                        update_no_application_payment(row['車位編號'], row['繳費狀態'], row['發票號碼'], row['期別'], row['姓名代號'])
+                        update_no_application_payment(row['車位編號'], row['繳費狀態'], row['發票號碼'], current, row['姓名代號'])
                         st.success('資料更新成功')
         finally:
             upload_db(local_db_path, db_file_id)
