@@ -169,7 +169,7 @@ def load_data6(current):
         B.車位備註,
         B.使用狀態
     FROM 申請紀錄 C
-    INNER JOIN 繳費紀錄 D ON C.期別 = D.期別 AND C.姓名代號 = D.姓名代號
+    LEFT JOIN 繳費紀錄 D ON C.期別 = D.期別 AND C.姓名代號 = D.姓名代號
     LEFT JOIN 停車位 B ON D.車位編號 = B.車位編號
     WHERE C.期別 = ?
     """
@@ -696,7 +696,6 @@ with tab6:
                             st.success('資料刪除成功')
                         else:
                             delete_payment(actual_current, row['姓名代號'])
-                            st.success('資料刪除成功')
 
             finally:
                 upload_db(local_db_path, db_file_id)
@@ -704,7 +703,7 @@ with tab6:
 
     st.header("免申請停車資料新增")
     columns = ['姓名代號', '姓名', '單位', '車牌號碼', '聯絡電話', '身分註記', '車位編號']
-    options = ["公務車", "公務車(電動)", "值班", "高階主管", "獨董", "公務保留"]
+    options = ["公務車", "公務車(電動)", "值班", "高階主管", "獨董", "公務保留","一般(轉讓)"]
     df8 = pd.DataFrame(columns=columns)
     edited_df8 = st.data_editor(df8, num_rows="dynamic", column_config={"身分註記": st.column_config.SelectboxColumn("身分註記", options=options, help="請選擇身分註記", required=True)})
     if st.button('新增確認'):
