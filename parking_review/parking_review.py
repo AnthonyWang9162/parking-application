@@ -627,7 +627,7 @@ with tab6:
     actual_quarter = get_actual_quarter(today.month)
     actual_current = f"{Taiwan_year}{actual_quarter:02}"
     # 定義下拉選單選項
-    options = ["公務車", "公務車(電動)", "值班", "高階主管", "獨董", "公務保留", "身心障礙", "孕婦", "保障", "一般"]
+    options = ["公務車", "公務車(電動)", "值班", "高階主管", "獨董", "公務保留", "身心障礙", "孕婦", "保障", "一般","一般(轉讓)"]
 
     df7 = load_data6(actual_current)
     df7['更新資訊'] = False
