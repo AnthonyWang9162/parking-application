@@ -645,7 +645,7 @@ with tab6:
         if st.button('刪除資料確認'):
             try:
                 for index, row in edited_df7.iterrows():
-                    if row['更新資訊']:
+                    if row['刪除資訊']:
                         update_parking_note(row['車位編號'],  row['車位備註'])
                         if exist_no_lottery(row['車牌號碼']):
                             delete_no_application(row['車牌號碼'])
