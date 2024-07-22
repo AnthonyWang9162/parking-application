@@ -696,6 +696,7 @@ with tab6:
                             st.success('資料刪除成功')
                         else:
                             delete_payment(actual_current, row['姓名代號'])
+                            st.success('資料刪除成功')
 
             finally:
                 upload_db(local_db_path, db_file_id)
