@@ -238,6 +238,17 @@ def delete_record(period, name_code):
     conn.commit()
     conn.close() 
 
+def delete_payment(period, name_code):
+    conn = connect_db()
+    cursor = conn.cursor()
+    delete_query = """
+    DELETE FROM 繳費紀錄
+    WHERE 期別 = ? AND 姓名代號 = ?
+    """
+    cursor.execute(delete_query, (period, name_code))
+    conn.commit()
+    conn.close() 
+
 def new_approved_car_record(employee_id, car_number):
     conn = connect_db()
     cursor = conn.cursor()
@@ -680,10 +691,11 @@ with tab6:
             try:
                 for index, row in edited_df7.iterrows():
                     if row['刪除資訊']:
-                        update_parking_note(row['車位編號'],  row['車位備註'])
                         if exist_no_lottery(row['車牌號碼']):
                             delete_no_application(row['車牌號碼'])
                             st.success('資料刪除成功')
+                        else:
+                            delete_payment(actual_current, row['姓名代號'])
 
             finally:
                 upload_db(local_db_path, db_file_id)
