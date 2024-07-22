@@ -294,6 +294,15 @@ def exist_no_lottery(car_number):
     conn.close()
     return output is not None
 
+def exist_lottery_payment(current, employee_id):
+    conn = connect_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM 抽籤繳費 WHERE 期別 = ? AND 姓名代號 = ?", (current, employee_id))
+    output = cursor.fetchone()
+    conn.commit()
+    conn.close()
+    return output is not None
+
 def insert_car_approved_record(employee_id, car_number):
     conn = connect_db()
     cursor = conn.cursor()
@@ -375,11 +384,23 @@ def parking_distribution(space_id, current, employee_id):
     conn.commit()
     conn.close()
 
-def update_payment(car_id, payment_status, bill_number, current, employee_id):
+def update_lottery_payment(car_id, payment_status, bill_number, current, employee_id):
     conn = connect_db()
     cursor = conn.cursor()
     update_query = """
     UPDATE 抽籤繳費
+    SET 車位編號 = ? , 繳費狀態 = ? , 發票號碼 = ?
+    WHERE 期別 = ?  AND 姓名代號 = ?
+    """
+    cursor.execute(update_query, (car_id, payment_status, bill_number, current, employee_id))
+    conn.commit()
+    conn.close()
+
+def update_no_application_payment(car_id, payment_status, bill_number, current, employee_id):
+    conn = connect_db()
+    cursor = conn.cursor()
+    update_query = """
+    UPDATE 免申請繳費
     SET 車位編號 = ? , 繳費狀態 = ? , 發票號碼 = ?
     WHERE 期別 = ?  AND 姓名代號 = ?
     """
@@ -653,9 +674,13 @@ with tab5:
         try:
             for index, row in edited_df6.iterrows():
                 if row['更新資訊']:
-                    update_payment(row['車位編號'], row['繳費狀態'], row['發票號碼'], row['期別'], row['姓名代號'])
                     update_parking_note(row['車位編號'],  row['車位備註'])
-                    st.success('資料更新成功')
+                    if exist_lottery_payment(current, row['姓名代號']):
+                        update_lottery_payment(row['車位編號'], row['繳費狀態'], row['發票號碼'], row['期別'], row['姓名代號'])
+                        st.success('資料更新成功')
+                    else:
+                        update_no_application_payment(row['車位編號'], row['繳費狀態'], row['發票號碼'], row['期別'], row['姓名代號'])
+                        st.success('資料更新成功')
         finally:
             upload_db(local_db_path, db_file_id)
             st.experimental_rerun()  # 重新運行腳本，刷新頁面
