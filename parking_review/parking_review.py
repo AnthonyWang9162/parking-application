@@ -674,6 +674,7 @@ with tab6:
                             st.success('資料更新成功')
             finally:
                 upload_db(local_db_path, db_file_id)
+                st.experimental_rerun()  # 重新運行腳本，刷新頁面
     with button2:
         if st.button('刪除資料確認'):
             try:
