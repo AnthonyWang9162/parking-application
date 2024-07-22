@@ -468,6 +468,7 @@ with tab2:
                         st.success("資料刪除成功")
             finally:
                 upload_db(local_db_path, db_file_id)
+                st.experimental_rerun()  # 重新運行腳本，刷新頁面
                 
     with button2:
         if st.button('保障停車準備分配車位', key="prepare_parking_button"):
@@ -480,6 +481,7 @@ with tab2:
                 st.error('本期免抽籤資料已經匯入進繳費表')
             finally:
                 upload_db(local_db_path, db_file_id)
+                st.experimental_rerun()  # 重新運行腳本，刷新頁面
 
     with button3:
         if st.button('更新確認', key="update_confirm_button"):
@@ -490,6 +492,7 @@ with tab2:
                 st.success('車牌更新成功')
             finally:
                 upload_db(local_db_path, db_file_id)
+                st.experimental_rerun()  # 重新運行腳本，刷新頁面
 with tab4:
     st.header("地下停車位使用狀態維護")  
     # 加載數據
@@ -533,6 +536,7 @@ with tab4:
                     st.success('資料更新成功')
         finally:
             upload_db(local_db_path, db_file_id)
+            st.experimental_rerun()  # 重新運行腳本，刷新頁面
 
     st.header("保障停車分配車位")
     df5 = load_data4(current)
@@ -552,6 +556,7 @@ with tab4:
                     st.success('車位分配成功')
         finally:
             upload_db(local_db_path, db_file_id)
+            st.experimental_rerun()  # 重新運行腳本，刷新頁面
 with tab5:
     st.header(f"{current}員工停車繳費維護")
 
@@ -604,6 +609,7 @@ with tab5:
                     st.success('資料更新成功')
         finally:
             upload_db(local_db_path, db_file_id)
+            st.experimental_rerun()  # 重新運行腳本，刷新頁面
 
 with tab6:
     st.header("地下停車一覽表") 
@@ -680,6 +686,7 @@ with tab6:
 
             finally:
                 upload_db(local_db_path, db_file_id)
+                st.experimental_rerun()  # 重新運行腳本，刷新頁面
 
     st.header("免申請停車資料新增")
     columns = ['姓名代號', '姓名', '單位', '車牌號碼', '聯絡電話', '身分註記', '車位編號']
@@ -695,3 +702,4 @@ with tab6:
                 st.error(f"資料新增失敗: {e}")
             finally:
                 upload_db(local_db_path, db_file_id)
+                st.experimental_rerun()  # 重新運行腳本，刷新頁面
