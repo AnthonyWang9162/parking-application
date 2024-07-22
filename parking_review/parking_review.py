@@ -642,11 +642,11 @@ with tab5:
     )
     options = ['已繳費','未繳費','放棄']
     # 添加篩選條件選擇框
-    filter_option2 = st.selectbox("篩選使用狀態", ["所有"] + options)
+    filter_option2 = st.selectbox("篩選繳費狀態", ["所有"] + options)
 
     # 根據篩選條件過濾數據框
     if filter_option2 != "所有":
-        df6 = df6[df6['使用狀態'] == filter_option]
+        df6 = df6[df6['繳費狀態'] == filter_option]
 
     # 根據姓名篩選數據
     if name:
