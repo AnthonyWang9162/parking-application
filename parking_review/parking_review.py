@@ -661,6 +661,9 @@ with tab5:
     elif filter_option1 == "備取":
         df6 = df6[df6['車位編號'].str.startswith('備取')]
 
+    # 添加電子郵件列
+    df6['電子郵件'] = df6['姓名代號'].apply(lambda x: f"u{x}@taipower.com.tw")
+
     df6['更新資訊'] = False
     editable_columns = ['車位編號','車位備註','繳費狀態', '發票號碼', '更新資訊']
     options = ['已繳費', '未繳費', '放棄']
@@ -678,6 +681,7 @@ with tab5:
             )
         }
     )
+
     if st.button('更新資訊確認'):
         try:
             for index, row in edited_df6.iterrows():
@@ -692,7 +696,6 @@ with tab5:
         finally:
             upload_db(local_db_path, db_file_id)
             st.experimental_rerun()  # 重新運行腳本，刷新頁面
-
 
 with tab6:
     st.header("地下停車一覽表") 
