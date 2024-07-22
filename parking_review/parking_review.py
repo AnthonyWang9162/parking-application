@@ -223,7 +223,7 @@ def delete_no_application(car_number):
     DELETE FROM 免申請
     WHERE 車牌號碼 = ?
     """
-    cursor.execute(delete_query, (car_number))
+    cursor.execute(delete_query, (car_number,))
     conn.commit()
     conn.close()
 
