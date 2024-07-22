@@ -258,6 +258,15 @@ def new_approved_car_record(employee_id, car_number):
     conn.close()
     return output is None
 
+def new_no_application_payment(current, employee_id):
+    conn = connect_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM 免申請繳費 WHERE 期別 = ? AND 姓名代號 = ?", (current, employee_id))
+    output = cursor.fetchone()
+    conn.commit()
+    conn.close()
+    return output is None
+
 def exist_no_lottery(car_number):
     conn = connect_db()
     cursor = conn.cursor()
@@ -298,6 +307,17 @@ def insert_no_application(employee_id, name, unit, car_number, contact_info, spe
     VALUES (?,?,?,?,?,?,?)
     """
     cursor.execute(insert_query, (employee_id, name, unit, car_number, contact_info, special_needs, place_id))
+    conn.commit()
+    conn.close()
+
+def insert_no_application_payment(current, employee_id, space_number):
+    conn = connect_db()
+    cursor = conn.cursor()
+    insert_query = """
+    INSERT INTO 免申請繳費 (期別,姓名代號,車位編號,繳費狀態)
+    VALUES (?,?,?,'未繳費')
+    """
+    cursor.execute(insert_query, (current, employee_id, space_number))
     conn.commit()
     conn.close()
 
@@ -669,7 +689,7 @@ with tab6:
             )
         }
     )
-    button1, button2 = st.columns(2)
+    button1, button2, button3 = st.columns(3)
     with button1:
         if st.button('彙整更新確認'):
             try:
@@ -700,6 +720,21 @@ with tab6:
             finally:
                 upload_db(local_db_path, db_file_id)
                 st.experimental_rerun()  # 重新運行腳本，刷新頁面
+    with button3:
+        if st.button(f'{current}免申請停車進繳費表'):
+            try:
+                for index, row in edited_df7.iterrows():
+                    if new_no_application_payment(current, row['姓名代號']):
+                        if row['身分註記'] in ['高階主管', '值班']:
+                            insert_no_application_payment(current, row['姓名代號'], row['車位編號'])
+                        else:
+                            continue
+                    else:
+                        continue
+            finally:
+                upload_db(local_db_path, db_file_id)
+                st.success(f'{current}免申請停車進繳費表成功')
+                st.experimental_rerun()
 
     st.header("免申請停車資料新增")
     columns = ['姓名代號', '姓名', '單位', '車牌號碼', '聯絡電話', '身分註記', '車位編號']
