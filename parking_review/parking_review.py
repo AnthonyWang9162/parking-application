@@ -633,13 +633,20 @@ with tab5:
     # 姓名输入框
     name = st.text_input("請輸入要篩選的姓名") 
 
+    df6 = load_data5(current)
+
     # 篩選條件下拉選單
-    filter_option = st.selectbox(
+    filter_option1 = st.selectbox(
         "選擇車位篩選條件",
         ["所有", "正取", "備取"]
     )
+    options = ['已繳費','未繳費','放棄']
+    # 添加篩選條件選擇框
+    filter_option2 = st.selectbox("篩選使用狀態", ["所有"] + options)
 
-    df6 = load_data5(current)
+    # 根據篩選條件過濾數據框
+    if filter_option2 != "所有":
+        df6 = df6[df6['使用狀態'] == filter_option]
 
     # 根據姓名篩選數據
     if name:
@@ -649,9 +656,9 @@ with tab5:
     df6['車位編號'] = df6['車位編號'].astype(str).fillna('')
 
     # 根據選擇的篩選條件進行進一步篩選
-    if filter_option == "正取":
+    if filter_option1 == "正取":
         df6 = df6[df6['車位編號'].str.startswith('B')]
-    elif filter_option == "備取":
+    elif filter_option1 == "備取":
         df6 = df6[df6['車位編號'].str.startswith('備取')]
     df6['更新資訊'] = False
     editable_columns = ['車位編號','車位備註','繳費狀態', '發票號碼', '更新資訊']
@@ -684,6 +691,7 @@ with tab5:
         finally:
             upload_db(local_db_path, db_file_id)
             st.experimental_rerun()  # 重新運行腳本，刷新頁面
+
 
 with tab6:
     st.header("地下停車一覽表") 
