@@ -788,13 +788,9 @@ with tab6:
                 st.experimental_rerun()  # 重新運行腳本，刷新頁面
     with button2:
         if st.button('刪除資料確認'):
-            try:
-                for index, row in edited_df7.iterrows():
-                    if row['刪除資訊']:
-                        st.session_state.delete_data_list.append(row.to_dict())
-            finally:
-                upload_db(local_db_path, db_file_id)
-                st.experimental_rerun()  # 重新運行腳本，刷新頁面
+            for index, row in edited_df7.iterrows():
+                if row['刪除資訊']:
+                    st.session_state.delete_data_list.append(row.to_dict())
 
         if st.session_state.delete_data_list:
             st.write("以下是審核不通過的申請，請確認是否確定不通過：")
