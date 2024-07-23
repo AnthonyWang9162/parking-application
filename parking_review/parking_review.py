@@ -787,7 +787,9 @@ with tab6:
                 upload_db(local_db_path, db_file_id)
                 st.experimental_rerun()  # 重新運行腳本，刷新頁面
     with button2:
-        st.session_state.delete_data_list=[]
+        # 使用 session state 管理未通過的列表
+        if 'delete_data_list' not in st.session_state:
+            st.session_state.delete_data_list = []
         if st.button('刪除資料確認'):
             for index, row in edited_df7.iterrows():
                 if row['刪除資訊']:
