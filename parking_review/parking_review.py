@@ -797,7 +797,7 @@ with tab6:
 
         if st.session_state.delete_data_list:
             st.write("以下是審核不通過的申請，請確認是否確定不通過：")
-            for i, record in enumerate(st.session_state.delete_data_list):
+            for i, row in enumerate(st.session_state.delete_data_list):
                 if st.button(f"確認刪除 - {record['姓名']} ({record['車牌號碼']})", key=f"confirm_delete_button_{i}"):
                     st.session_state.delete_data_list.pop(i)  # 移除已處理的記錄
                     st.success(f"審核不通過已確認 - {record['姓名']} ({record['車牌號碼']})")
