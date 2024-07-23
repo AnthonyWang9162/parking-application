@@ -791,15 +791,26 @@ with tab6:
             try:
                 for index, row in edited_df7.iterrows():
                     if row['刪除資訊']:
-                        if exist_no_lottery(row['車牌號碼']):
-                            delete_no_application(row['車牌號碼'])
-                            st.success('資料刪除成功')
-                        else:
-                            delete_payment(actual_current, row['姓名代號'])
-
+                        st.session_state.delete_data_list.append(row.to_dict())
             finally:
                 upload_db(local_db_path, db_file_id)
                 st.experimental_rerun()  # 重新運行腳本，刷新頁面
+
+        if st.session_state.delete_data_list:
+            st.write("以下是審核不通過的申請，請確認是否確定不通過：")
+            for i, record in enumerate(st.session_state.delete_data_list):
+                if st.button(f"確認刪除 - {record['姓名']} ({record['車牌號碼']})", key=f"confirm_delete_button_{i}"):
+                    delete_record(record['期別'], record['姓名代號'])
+                    st.session_state.not_passed_list.pop(i)  # 移除已處理的記錄
+                    st.success(f"審核不通過已確認 - {record['姓名']} ({record['車牌號碼']})")
+                    if exist_no_lottery(row['車牌號碼']):
+                        delete_no_application(row['車牌號碼'])
+                        st.success('資料刪除成功')
+                    else:
+                        delete_payment(actual_current, row['姓名代號'])
+                    upload_db(local_db_path, db_file_id)
+                    st.experimental_rerun()  # 重新運行腳本，刷新頁面
+
     with button3:
         if st.button(f'{current}免申請停車進繳費表'):
             try:
@@ -827,6 +838,9 @@ with tab6:
                 st.success("資料新增成功")
             except Exception as e:
                 st.error(f"資料新增失敗: {e}")
+            finally:
+                upload_db(local_db_path, db_file_id)
+                st.experimental_rerun()  # 重新運行腳本，刷新頁面
             finally:
                 upload_db(local_db_path, db_file_id)
                 st.experimental_rerun()  # 重新運行腳本，刷新頁面
