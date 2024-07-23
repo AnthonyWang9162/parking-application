@@ -834,9 +834,9 @@ with tab6:
         for index, row in edited_df8.iterrows():
             try:
                 insert_no_application(row['姓名代號'], row['姓名'], row['單位'], row['車牌號碼'], row['聯絡電話'], row['身分註記'], row['車位編號'])
-                st.success("資料新增成功")
             except Exception as e:
                 st.error(f"資料新增失敗: {e}")
             finally:
+                st.success("資料新增成功")
                 upload_db(local_db_path, db_file_id)
                 st.experimental_rerun()  # 重新運行腳本，刷新頁面
