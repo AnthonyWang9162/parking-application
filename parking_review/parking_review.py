@@ -800,12 +800,12 @@ with tab6:
             for i, row in enumerate(st.session_state.delete_data_list):
                 if st.button(f"確認刪除 - {row['姓名']} ({row['車牌號碼']})", key=f"confirm_delete_button_{i}"):
                     st.session_state.delete_data_list.pop(i)  # 移除已處理的記錄
-                    st.success(f"審核不通過已確認 - {row['姓名']} ({row['車牌號碼']})")
                     if exist_no_lottery(row['車牌號碼']):
                         delete_no_application(row['車牌號碼'])
                         st.success('資料刪除成功')
                     else:
                         delete_payment(actual_current, row['姓名代號'])
+                        st.success('資料刪除成功')
                     upload_db(local_db_path, db_file_id)
                     st.experimental_rerun()  # 重新運行腳本，刷新頁面
 
