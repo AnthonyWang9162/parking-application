@@ -712,6 +712,8 @@ with tab5:
                         if row['繳費狀態'] =='已繳費' and new_payment_record(current, row['姓名代號']):
                             insert_payment_record(current, row['姓名代號'], row['車位編號'])
                             st.success('資料更新成功')
+                        else:
+                            st.success('資料更新成功')
                     else:
                         update_no_application_payment(row['車位編號'], row['繳費狀態'], row['發票號碼'], current, row['姓名代號'])
                         st.success('資料更新成功')
