@@ -170,11 +170,11 @@ def load_data6(current):
         A.車牌號碼,
         A.聯絡電話,
         A.身分註記,
-        A.車位編號,
+        B.車位編號,
         B.車位備註,
         B.使用狀態
-    FROM 免申請 A
-    RIGHT JOIN 停車位 B ON A.車位編號 = B.車位編號
+    FROM  停車位 B
+    LEFT JOIN 免申請 A ON A.車位編號 = B.車位編號
     UNION
     SELECT 
         C.姓名代號,
@@ -188,7 +188,7 @@ def load_data6(current):
         B.使用狀態
     FROM 申請紀錄 C
     INNER JOIN 繳費紀錄 D ON C.期別 = D.期別 AND C.姓名代號 = D.姓名代號
-    RIGHT JOIN 停車位 B ON D.車位編號 = B.車位編號
+    LEFT JOIN 停車位 B ON D.車位編號 = B.車位編號
     WHERE C.期別 = ?
     """
     
