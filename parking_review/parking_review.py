@@ -708,11 +708,12 @@ with tab5:
                 if row['更新資訊']:
                     update_parking_note(row['車位編號'], row['車位備註'])
                     if exist_lottery_payment(current, row['姓名代號']):
-                        update_lottery_payment(row['車位編號'], row['繳費狀態'], row['發票號碼'], current, row['姓名代號'])
                         if row['繳費狀態'] =='已繳費' and new_payment_record(current, row['姓名代號']):
+                            update_lottery_payment(row['車位編號'], row['繳費狀態'], row['發票號碼'], current, row['姓名代號'])
                             insert_payment_record(current, row['姓名代號'], row['車位編號'])
                             st.success('資料更新成功')
                         else:
+                            update_lottery_payment(row['車位編號'], row['繳費狀態'], row['發票號碼'], current, row['姓名代號'])
                             st.success('資料更新成功')
                     else:
                         update_no_application_payment(row['車位編號'], row['繳費狀態'], row['發票號碼'], current, row['姓名代號'])
