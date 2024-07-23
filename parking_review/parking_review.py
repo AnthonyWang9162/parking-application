@@ -724,7 +724,7 @@ with tab6:
     actual_quarter = get_actual_quarter(today.month)
     actual_current = f"{Taiwan_year}{actual_quarter:02}"
     # 定義下拉選單選項
-    options = ["公務車", "公務車(電動)", "值班", "高階主管", "獨董", "公務保留", "身心障礙", "孕婦", "保障", "一般","一般(轉讓)"]
+    options = ["公務車", "公務車(電動)", "值班", "高階主管", "獨董", "公務保留", "身心障礙", "孕婦", "保障", "一般","一般(轉讓)","專案"]
 
     df7 = load_data6(actual_current)
     df7['更新資訊'] = False
@@ -739,7 +739,7 @@ with tab6:
     # 姓名输入框
     name = st.text_input("請輸入要篩選的姓名", key="text_input_name_tab6") 
     # 定義下拉選單選項
-    options1 = ["公務車", "公務車(電動)", "值班", "高階主管", "獨董", "公務保留", "身心障礙", "孕婦", "保障", "一般","一般(轉讓)"]
+    options1 = ["公務車", "公務車(電動)", "值班", "高階主管", "獨董", "公務保留", "身心障礙", "孕婦", "保障", "一般","一般(轉讓)","專案"]
     options2 = ["公務車", "公務車(電動)", "值班", "高階主管", "獨董", "公務保留", "身心障礙", "孕婦", "保障", "抽籤"]
 
     # 根據姓名篩選數據
@@ -814,7 +814,7 @@ with tab6:
 
     st.header("免申請停車資料新增")
     columns = ['姓名代號', '姓名', '單位', '車牌號碼', '聯絡電話', '身分註記', '車位編號']
-    options = ["公務車", "公務車(電動)", "值班", "高階主管", "獨董", "公務保留","一般(轉讓)"]
+    options = ["公務車", "公務車(電動)", "值班", "高階主管", "獨董", "公務保留","孕婦","一般(轉讓)","專案"]
     df8 = pd.DataFrame(columns=columns)
     edited_df8 = st.data_editor(df8, num_rows="dynamic", column_config={"身分註記": st.column_config.SelectboxColumn("身分註記", options=options, help="請選擇身分註記", required=True)})
     if st.button('新增確認'):
