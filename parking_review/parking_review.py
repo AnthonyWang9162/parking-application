@@ -285,6 +285,15 @@ def new_no_application_payment(current, employee_id):
     conn.close()
     return output is None
 
+def new_payment_record(current, employee_id):
+    conn = connect_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM 免申請繳費 WHERE 期別 = ? AND 姓名代號 = ?", (current, employee_id))
+    output = cursor.fetchone()
+    conn.commit()
+    conn.close()
+    return output is None
+
 def exist_no_lottery(car_number):
     conn = connect_db()
     cursor = conn.cursor()
@@ -343,6 +352,17 @@ def insert_no_application_payment(current, employee_id, space_number):
     insert_query = """
     INSERT INTO 免申請繳費 (期別,姓名代號,車位編號,繳費狀態)
     VALUES (?,?,?,'未繳費')
+    """
+    cursor.execute(insert_query, (current, employee_id, space_number))
+    conn.commit()
+    conn.close()
+
+def insert_payment_record(current, employee_id, space_number):
+    conn = connect_db()
+    cursor = conn.cursor()
+    insert_query = """
+    INSERT INTO 繳費紀錄 (期別,姓名代號,車位編號)
+    VALUES (?,?,?)
     """
     cursor.execute(insert_query, (current, employee_id, space_number))
     conn.commit()
@@ -689,7 +709,9 @@ with tab5:
                     update_parking_note(row['車位編號'], row['車位備註'])
                     if exist_lottery_payment(current, row['姓名代號']):
                         update_lottery_payment(row['車位編號'], row['繳費狀態'], row['發票號碼'], current, row['姓名代號'])
-                        st.success('資料更新成功')
+                        if new_payment_record(current, row['姓名代號']):
+                            insert_payment_record(current, row['姓名代號'], row['車位編號'])
+                            st.success('資料更新成功')
                     else:
                         update_no_application_payment(row['車位編號'], row['繳費狀態'], row['發票號碼'], current, row['姓名代號'])
                         st.success('資料更新成功')
