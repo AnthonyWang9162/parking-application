@@ -822,7 +822,7 @@ with tab6:
         if st.button(f'{current}免申請停車進繳費表'):
             try:
                 for index, row in edited_df7.iterrows():
-                    if new_no_application_payment(actual_current, row['姓名代號']):
+                    if new_no_application_payment(current, row['姓名代號']):
                         if row['身分註記'] in ['高階主管', '值班']:
                             insert_no_application_payment(current, row['姓名代號'], row['車位編號'])
                 st.success(f'{current}免申請停車進繳費表成功')
