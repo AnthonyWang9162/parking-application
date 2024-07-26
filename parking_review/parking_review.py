@@ -730,7 +730,8 @@ with tab6:
     actual_quarter = get_actual_quarter(today.month)
     actual_current = f"{Taiwan_year}{actual_quarter:02}"
 
-    options = ["公務車", "公務車(電動)", "值班", "高階主管", "獨董", "公務保留", "身心障礙", "孕婦", "保障", "一般","一般(轉讓)","專案"]
+    options1 = ["公務車", "公務車(電動)", "值班", "高階主管", "獨董", "公務保留", "身心障礙", "孕婦", "保障", "一般","一般(轉讓)","專案"]
+    options2 = ["公務車", "公務車(電動)", "值班", "高階主管", "獨董", "公務保留", "身心障礙", "孕婦", "保障", "抽籤","專案"]
 
     df7 = load_data6(actual_current)
     df7['更新資訊'] = False
@@ -755,13 +756,13 @@ with tab6:
         column_config={
             "身分註記": st.column_config.SelectboxColumn(
                 "身分註記",
-                options=options,
+                options=options1,
                 help="請選擇要調整的身分註記",
                 required=True
             ),
             "使用狀態": st.column_config.SelectboxColumn(
                 "使用狀態",
-                options=options,
+                options=options2,
                 help="請選擇該車位用途",
                 required=True
             )
