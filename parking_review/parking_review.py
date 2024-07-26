@@ -175,6 +175,8 @@ def load_data6(current):
         B.使用狀態
     FROM  停車位 B
     LEFT JOIN 免申請 A ON A.車位編號 = B.車位編號
+    LEFT JOIN 申請紀錄 C ON C.期別 = ? AND C.姓名代號 = A.姓名代號
+    LEFT JOIN 繳費紀錄 D ON D.期別 = C.期別 AND D.姓名代號 = C.姓名代號 AND D.車位編號 = B.車位編號
     UNION
     SELECT 
         C.姓名代號,
@@ -196,7 +198,6 @@ def load_data6(current):
     df = pd.read_sql_query(query, conn, params=(current, current))
     conn.close()
     return df
-
 # 更新数据库中的记录
 def update_record(period, name_code, plate_binding):
     conn = connect_db()
