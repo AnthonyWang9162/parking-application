@@ -781,7 +781,7 @@ with tab6:
                 st.success('資料更新成功')
             finally:
                 upload_db(local_db_path, db_file_id)
-                st.experimental_rerun()
+                st.rerun()
 
     with button2:
         if 'delete_data_list' not in st.session_state:
@@ -803,7 +803,7 @@ with tab6:
                         delete_payment(actual_current, row['姓名代號'])
                     st.success('資料刪除成功')
                     upload_db(local_db_path, db_file_id)
-                    st.experimental_rerun()
+                    st.rerun()
 
     with button3:
         if st.button(f'{current}免申請停車進繳費表'):
@@ -838,4 +838,4 @@ with tab6:
                 st.error(f"資料新增失敗: {e}")
             finally:
                 upload_db(local_db_path, db_file_id)
-                st.experimental_rerun()
+                st.rerun()
