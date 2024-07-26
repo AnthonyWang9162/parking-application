@@ -746,10 +746,10 @@ with tab6:
     df7['更新資訊'] = False
     df7['刪除資訊'] = False
 
-    filter_option = st.selectbox("篩選身分註記", ["所有"] + options1)
+    filter_option = st.selectbox("篩選車位使用狀態", ["所有"] + options2)
 
     if filter_option != "所有":
-        df7 = df7[df7['身分註記'] == filter_option]
+        df7 = df7[df7['使用狀態'] == filter_option]
 
     name = st.text_input("請輸入要篩選的姓名", key="text_input_name_tab6")
 
