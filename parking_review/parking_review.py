@@ -189,7 +189,7 @@ def load_data6(current):
     INNER JOIN 繳費紀錄 D ON C.期別 = D.期別 AND C.姓名代號 = D.姓名代號
     LEFT JOIN 停車位 B ON D.車位編號 = B.車位編號
     WHERE C.期別 = ?
-    AND B.車位編號 NOT IN (SELECT 車位編號 FROM 免申請)
+    AND B.車位編號 NOT IN (SELECT 車位編號 FROM 申請紀錄)
     """
     df = pd.read_sql_query(query, conn, params=(current,))
     conn.close()
