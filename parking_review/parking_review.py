@@ -175,8 +175,6 @@ def load_data6(current):
         B.使用狀態
     FROM  停車位 B
     LEFT JOIN 免申請 A ON A.車位編號 = B.車位編號
-    LEFT JOIN 申請紀錄 C ON C.期別 = ? AND C.姓名代號 = A.姓名代號
-    LEFT JOIN 繳費紀錄 D ON D.期別 = C.期別 AND D.姓名代號 = C.姓名代號 AND D.車位編號 = B.車位編號
     UNION
     SELECT 
         C.姓名代號,
@@ -810,13 +808,13 @@ with tab6:
                     st.experimental_rerun()
 
     with button3:
-        if st.button(f'{actual_current}免申請停車進繳費表'):
+        if st.button(f'{current}免申請停車進繳費表'):
             try:
                 for index, row in edited_df7.iterrows():
                     if new_no_application_payment(actual_current, row['姓名代號']):
                         if row['身分註記'] in ['高階主管', '值班']:
                             insert_no_application_payment(actual_current, row['姓名代號'], row['車位編號'])
-                st.success(f'{actual_current}免申請停車進繳費表成功')
+                st.success(f'{current}免申請停車進繳費表成功')
             finally:
                 upload_db(local_db_path, db_file_id)
 
