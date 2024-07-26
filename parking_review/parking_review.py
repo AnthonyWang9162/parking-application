@@ -170,13 +170,11 @@ def load_data6(current):
         A.車牌號碼,
         A.聯絡電話,
         A.身分註記,
-        B.車位編號,
+        A.車位編號,
         B.車位備註,
         B.使用狀態
-    FROM  停車位 B
-    LEFT JOIN 免申請 A ON A.車位編號 = B.車位編號
-    LEFT JOIN 申請紀錄 C ON C.期別 = ? AND C.姓名代號 = A.姓名代號
-    LEFT JOIN 繳費紀錄 D ON D.期別 = C.期別 AND D.姓名代號 = C.姓名代號 AND D.車位編號 = B.車位編號
+    FROM 免申請 A
+    LEFT JOIN 停車位 B ON A.車位編號 = B.車位編號
     UNION
     SELECT 
         C.姓名代號,
@@ -185,17 +183,16 @@ def load_data6(current):
         C.車牌號碼,
         C.聯絡電話,
         C.身分註記,
-        B.車位編號,
+        D.車位編號,
         B.車位備註,
         B.使用狀態
     FROM 申請紀錄 C
     INNER JOIN 繳費紀錄 D ON C.期別 = D.期別 AND C.姓名代號 = D.姓名代號
     LEFT JOIN 停車位 B ON D.車位編號 = B.車位編號
     WHERE C.期別 = ?
-    AND B.車位編號 NOT IN (SELECT 車位編號 FROM 免申請)
     """
     
-    df = pd.read_sql_query(query, conn, params=(current, current))
+    df = pd.read_sql_query(query, conn, params=(current,))
     conn.close()
     return df
 
@@ -288,15 +285,6 @@ def new_no_application_payment(current, employee_id):
     conn.close()
     return output is None
 
-def new_payment_record(current, employee_id):
-    conn = connect_db()
-    cursor = conn.cursor()
-    cursor.execute("SELECT * FROM 免申請繳費 WHERE 期別 = ? AND 姓名代號 = ?", (current, employee_id))
-    output = cursor.fetchone()
-    conn.commit()
-    conn.close()
-    return output is None
-
 def exist_no_lottery(car_number):
     conn = connect_db()
     cursor = conn.cursor()
@@ -355,17 +343,6 @@ def insert_no_application_payment(current, employee_id, space_number):
     insert_query = """
     INSERT INTO 免申請繳費 (期別,姓名代號,車位編號,繳費狀態)
     VALUES (?,?,?,'未繳費')
-    """
-    cursor.execute(insert_query, (current, employee_id, space_number))
-    conn.commit()
-    conn.close()
-
-def insert_payment_record(current, employee_id, space_number):
-    conn = connect_db()
-    cursor = conn.cursor()
-    insert_query = """
-    INSERT INTO 繳費紀錄 (期別,姓名代號,車位編號)
-    VALUES (?,?,?)
     """
     cursor.execute(insert_query, (current, employee_id, space_number))
     conn.commit()
@@ -711,13 +688,8 @@ with tab5:
                 if row['更新資訊']:
                     update_parking_note(row['車位編號'], row['車位備註'])
                     if exist_lottery_payment(current, row['姓名代號']):
-                        if row['繳費狀態'] =='已繳費' and new_payment_record(current, row['姓名代號']):
-                            update_lottery_payment(row['車位編號'], row['繳費狀態'], row['發票號碼'], current, row['姓名代號'])
-                            insert_payment_record(current, row['姓名代號'], row['車位編號'])
-                            st.success('資料更新成功')
-                        else:
-                            update_lottery_payment(row['車位編號'], row['繳費狀態'], row['發票號碼'], current, row['姓名代號'])
-                            st.success('資料更新成功')
+                        update_lottery_payment(row['車位編號'], row['繳費狀態'], row['發票號碼'], current, row['姓名代號'])
+                        st.success('資料更新成功')
                     else:
                         update_no_application_payment(row['車位編號'], row['繳費狀態'], row['發票號碼'], current, row['姓名代號'])
                         st.success('資料更新成功')
@@ -730,7 +702,7 @@ with tab6:
     actual_quarter = get_actual_quarter(today.month)
     actual_current = f"{Taiwan_year}{actual_quarter:02}"
     # 定義下拉選單選項
-    options = ["公務車", "公務車(電動)", "值班", "高階主管", "獨董", "公務保留", "身心障礙", "孕婦", "保障", "一般","一般(轉讓)","專案"]
+    options = ["公務車", "公務車(電動)", "值班", "高階主管", "獨董", "公務保留", "身心障礙", "孕婦", "保障", "一般","一般(轉讓)"]
 
     df7 = load_data6(actual_current)
     df7['更新資訊'] = False
@@ -745,7 +717,7 @@ with tab6:
     # 姓名输入框
     name = st.text_input("請輸入要篩選的姓名", key="text_input_name_tab6") 
     # 定義下拉選單選項
-    options1 = ["公務車", "公務車(電動)", "值班", "高階主管", "獨董", "公務保留", "身心障礙", "孕婦", "保障", "一般","一般(轉讓)","專案"]
+    options1 = ["公務車", "公務車(電動)", "值班", "高階主管", "獨董", "公務保留", "身心障礙", "孕婦", "保障", "一般","一般(轉讓)"]
     options2 = ["公務車", "公務車(電動)", "值班", "高階主管", "獨董", "公務保留", "身心障礙", "孕婦", "保障", "抽籤"]
 
     # 根據姓名篩選數據
@@ -790,28 +762,19 @@ with tab6:
                 upload_db(local_db_path, db_file_id)
                 st.experimental_rerun()  # 重新運行腳本，刷新頁面
     with button2:
-        # 使用 session state 管理未通過的列表
-        if 'delete_data_list' not in st.session_state:
-            st.session_state.delete_data_list = []
         if st.button('刪除資料確認'):
-            for index, row in edited_df7.iterrows():
-                if row['刪除資訊']:
-                    st.session_state.delete_data_list.append(row.to_dict())
+            try:
+                for index, row in edited_df7.iterrows():
+                    if row['刪除資訊']:
+                        if exist_no_lottery(row['車牌號碼']):
+                            delete_no_application(row['車牌號碼'])
+                            st.success('資料刪除成功')
+                        else:
+                            delete_payment(actual_current, row['姓名代號'])
 
-        if st.session_state.delete_data_list:
-            st.write("以下是選擇刪除的項目，請確認是否要刪除資料：")
-            for i, row in enumerate(st.session_state.delete_data_list):
-                if st.button(f"確認刪除 - {row['姓名']} ({row['車牌號碼']})", key=f"confirm_delete_button_{i}"):
-                    st.session_state.delete_data_list.pop(i)  # 移除已處理的記錄
-                    if exist_no_lottery(row['車牌號碼']):
-                        delete_no_application(row['車牌號碼'])
-                        st.success('資料刪除成功')
-                    else:
-                        delete_payment(actual_current, row['姓名代號'])
-                        st.success('資料刪除成功')
-                    upload_db(local_db_path, db_file_id)
-                    st.experimental_rerun()  # 重新運行腳本，刷新頁面
-
+            finally:
+                upload_db(local_db_path, db_file_id)
+                st.experimental_rerun()  # 重新運行腳本，刷新頁面
     with button3:
         if st.button(f'{current}免申請停車進繳費表'):
             try:
@@ -829,7 +792,7 @@ with tab6:
 
     st.header("免申請停車資料新增")
     columns = ['姓名代號', '姓名', '單位', '車牌號碼', '聯絡電話', '身分註記', '車位編號']
-    options = ["公務車", "公務車(電動)", "值班", "高階主管", "獨董", "公務保留","孕婦","一般(轉讓)","專案"]
+    options = ["公務車", "公務車(電動)", "值班", "高階主管", "獨董", "公務保留","一般(轉讓)"]
     df8 = pd.DataFrame(columns=columns)
     edited_df8 = st.data_editor(df8, num_rows="dynamic", column_config={"身分註記": st.column_config.SelectboxColumn("身分註記", options=options, help="請選擇身分註記", required=True)})
     if st.button('新增確認'):
