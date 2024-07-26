@@ -737,7 +737,7 @@ with tab6:
     df7['更新資訊'] = False
     df7['刪除資訊'] = False
 
-    filter_option = st.selectbox("篩選身分註記", ["所有"] + options)
+    filter_option = st.selectbox("篩選身分註記", ["所有"] + options1)
 
     if filter_option != "所有":
         df7 = df7[df7['身分註記'] == filter_option]
