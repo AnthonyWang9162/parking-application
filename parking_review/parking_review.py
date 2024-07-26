@@ -842,6 +842,3 @@ with tab6:
             finally:
                 upload_db(local_db_path, db_file_id)
                 st.experimental_rerun()  # 重新運行腳本，刷新頁面
-            finally:
-                upload_db(local_db_path, db_file_id)
-                st.experimental_rerun()
