@@ -824,7 +824,7 @@ with tab6:
                 for index, row in edited_df7.iterrows():
                     if new_no_application_payment(actual_current, row['姓名代號']):
                         if row['身分註記'] in ['高階主管', '值班']:
-                            insert_no_application_payment(actual_current, row['姓名代號'], row['車位編號'])
+                            insert_no_application_payment(current, row['姓名代號'], row['車位編號'])
                 st.success(f'{current}免申請停車進繳費表成功')
             finally:
                 upload_db(local_db_path, db_file_id)
