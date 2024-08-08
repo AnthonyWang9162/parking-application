@@ -203,6 +203,7 @@ def load_data6(current):
     FROM  停車位 B
     LEFT JOIN 免申請 A ON A.車位編號 = B.車位編號
     WHERE B.車位編號 NOT IN (SELECT 車位編號 FROM 免申請 UNION SELECT 車位編號 FROM 繳費紀錄)
+    ORDER BY B.車位編號
 
     """
     df = pd.read_sql_query(query, conn, params=(current,))
