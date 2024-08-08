@@ -218,8 +218,9 @@ def load_data6(current):
     finally:
         conn.close()
     
-    # 删除不需要的列
-    df.drop(columns=['車位排序編號'], inplace=True)
+    # 如果 '車位排序編號' 列存在则删除
+    if '車位排序編號' in df.columns:
+        df.drop(columns=['車位排序'], inplace=True)
     
     return df
 # 更新数据库中的记录
