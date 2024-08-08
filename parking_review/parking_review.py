@@ -163,6 +163,7 @@ def load_data6(current):
     conn = connect_db()
     query = """
     SELECT 
+        B.車位排序
         A.姓名代號,
         A.姓名,
         A.單位,
@@ -191,6 +192,7 @@ def load_data6(current):
     WHERE C.期別 = ?
     UNION
     SELECT 
+        B.車位排序
         A.姓名代號,
         A.姓名,
         A.單位,
