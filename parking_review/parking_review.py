@@ -764,7 +764,7 @@ with tab6:
 
     name = st.text_input("請輸入要篩選的姓名", key="text_input_name_tab6")
     if name:
-        df['姓名'].astype(str)
+        df7['姓名'].astype(str)
         df7 = df7[df7['姓名'].str.contains(name)]
     filter_option = st.selectbox("篩選車位使用狀態", ["所有"] + options2)
     if filter_option != "所有":
