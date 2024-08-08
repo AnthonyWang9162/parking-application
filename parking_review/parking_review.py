@@ -219,7 +219,7 @@ def load_data6(current):
         conn.close()
     
     # 如果 '車位排序編號' 列存在则删除
-    if '車位排序編號' in df.columns:
+    if '車位排序' in df.columns:
         df.drop(columns=['車位排序'], inplace=True)
     
     return df
