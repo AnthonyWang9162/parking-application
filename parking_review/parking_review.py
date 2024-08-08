@@ -173,7 +173,7 @@ def load_data6(current):
             A.車位編號,
             B.車位備註,
             B.使用狀態,
-            B.車位排序編號
+            B.車位排序
         FROM 免申請 A
         LEFT JOIN 停車位 B ON A.車位編號 = B.車位編號
         UNION
@@ -187,7 +187,7 @@ def load_data6(current):
             D.車位編號,
             B.車位備註,
             B.使用狀態,
-            B.車位排序編號
+            B.車位排序
         FROM 申請紀錄 C
         INNER JOIN 繳費紀錄 D ON C.期別 = D.期別 AND C.姓名代號 = D.姓名代號
         LEFT JOIN 停車位 B ON D.車位編號 = B.車位編號
@@ -203,12 +203,12 @@ def load_data6(current):
             B.車位編號,
             B.車位備註,
             B.使用狀態,
-            B.車位排序編號
+            B.車位排序
         FROM 停車位 B
         LEFT JOIN 免申請 A ON A.車位編號 = B.車位編號
         WHERE B.車位編號 NOT IN (SELECT 車位編號 FROM 免申請 UNION SELECT 車位編號 FROM 繳費紀錄)
     ) subquery
-    ORDER BY 車位排序編號
+    ORDER BY 車位排序
     """
 
     try:
