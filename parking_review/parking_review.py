@@ -762,15 +762,12 @@ with tab6:
     df7['更新資訊'] = False
     df7['刪除資訊'] = False
 
-    filter_option = st.selectbox("篩選車位使用狀態", ["所有"] + options2)
-
-    if filter_option != "所有":
-        df7 = df7[df7['使用狀態'] == filter_option]
-
     name = st.text_input("請輸入要篩選的姓名", key="text_input_name_tab6")
-
     if name:
         df7 = df7[df7['姓名'].str.contains(name)]
+    filter_option = st.selectbox("篩選車位使用狀態", ["所有"] + options2)
+    if filter_option != "所有":
+        df7 = df7[df7['使用狀態'] == filter_option]
 
     uneditable_columns = ['姓名代號', '車牌號碼']
     disabled_columns = [col for col in df7.columns if col in uneditable_columns]
