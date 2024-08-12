@@ -854,6 +854,7 @@ with tab6:
             
             finally:
                 upload_db(local_db_path, db_file_id)
+                st.rerun()
 
     st.header("免申請停車資料新增")
     columns = ['姓名代號', '姓名', '單位', '車牌號碼', '聯絡電話', '身分註記', '車位編號']
