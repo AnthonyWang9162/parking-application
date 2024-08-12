@@ -835,11 +835,23 @@ with tab6:
     with button3:
         if st.button(f'{current}免申請停車進繳費表'):
             try:
-                for index, row in edited_df7.iterrows():
+                # 先从数据库中获取满足条件的 姓名代號 和 車位編號
+                conn = connect_db()
+                query = """
+                SELECT 姓名代號, 車位編號 
+                FROM 免申請 
+                WHERE 身分註記 IN ('高階主管', '值班')
+                """
+                df_high_level = pd.read_sql_query(query, conn)
+                conn.close()
+    
+                # 对每一行数据执行 insert_no_application_payment 操作
+                for index, row in df_high_level.iterrows():
                     if new_no_application_payment(current, row['姓名代號']):
-                        if row['身分註記'] in ['高階主管', '值班']:
-                            insert_no_application_payment(current, row['姓名代號'], row['車位編號'])
+                        insert_no_application_payment(current, row['姓名代號'], row['車位編號'])
+                
                 st.success(f'{current}免申請停車進繳費表成功')
+            
             finally:
                 upload_db(local_db_path, db_file_id)
 
