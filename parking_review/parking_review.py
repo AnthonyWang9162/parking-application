@@ -89,7 +89,7 @@ def load_data2(current):
 
 def load_data3():
     conn = connect_db()
-    query = "SELECT * FROM 停車位 "
+    query = "SELECT 車位編號,使用狀態,車位備註 FROM 停車位 "
     df = pd.read_sql_query(query, conn)
     conn.close()
     return df
