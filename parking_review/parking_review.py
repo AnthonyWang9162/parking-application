@@ -674,7 +674,7 @@ with tab4:
                     st.success('車位分配成功')
         finally:
             upload_db(local_db_path, db_file_id)
-            st.experimental_rerun()  # 重新運行腳本，刷新頁面
+            st.rerun()  # 重新運行腳本，刷新頁面
 with tab5:
     st.header(f"{current}員工停車繳費維護")
 
