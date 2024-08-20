@@ -734,7 +734,7 @@ with tab5:
         try:
             for index, row in edited_df6.iterrows():
                 if row['更新資訊']:
-                    update_parking_note(row['車位編號'], row['車位備註'])
+                    update_parking_space(row['車位編號'], row['車位備註'])
                     if exist_lottery_payment(current, row['姓名代號']):
                         if row['繳費狀態'] =='已繳費' and new_payment_record(current, row['姓名代號']):
                             update_lottery_payment(row['車位編號'], row['繳費狀態'], row['發票號碼'], current, row['姓名代號'])
@@ -799,7 +799,7 @@ with tab6:
             try:
                 for index, row in edited_df7.iterrows():
                     if row['更新資訊']:
-                        update_parking_note(row['車位編號'],  row['車位備註'],  row['使用狀態'])
+                        update_parking_space(row['車位編號'], row['使用狀態'], row['車位備註'])
                         if exist_no_lottery(row['車牌號碼']):
                             update_no_lottery(row['姓名'], row['單位'], row['聯絡電話'], row['身分註記'], row['車位編號'], row['車牌號碼'])
                         else:
