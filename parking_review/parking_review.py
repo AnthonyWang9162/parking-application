@@ -407,12 +407,12 @@ def update_parking_space(space_id, status, note):
     conn.commit()
     conn.close()
 
-def update_parking_note(space_id, note, status):
+def update_parking_note(space_id, note):
     conn = connect_db()
     cursor = conn.cursor()
     update_query = """
     UPDATE 停車位
-    SET  車位備註 = ? , 使用狀態 = ?
+    SET  車位備註 = ? 
     WHERE 車位編號 = ? 
     """
     cursor.execute(update_query, (note, status, space_id))
