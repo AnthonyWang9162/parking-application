@@ -406,7 +406,19 @@ def update_parking_space(space_id, status, note):
     cursor.execute(update_query, (status, note, space_id))
     conn.commit()
     conn.close()
-    
+
+def update_parking_note(space_id, note, status):
+    conn = connect_db()
+    cursor = conn.cursor()
+    update_query = """
+    UPDATE 停車位
+    SET  車位備註 = ? , 使用狀態 = ?
+    WHERE 車位編號 = ? 
+    """
+    cursor.execute(update_query, (note, status, space_id))
+    conn.commit()
+    conn.close()
+
 def parking_distribution(space_id, current, employee_id):
     conn = connect_db()
     cursor = conn.cursor()
@@ -722,8 +734,8 @@ with tab5:
         try:
             for index, row in edited_df6.iterrows():
                 if row['更新資訊']:
+                    update_parking_note(row['車位編號'], row['車位備註'])
                     if exist_lottery_payment(current, row['姓名代號']):
-                        update_parking_note(row['車位編號'], row['車位備註'])
                         if row['繳費狀態'] =='已繳費' and new_payment_record(current, row['姓名代號']):
                             update_lottery_payment(row['車位編號'], row['繳費狀態'], row['發票號碼'], current, row['姓名代號'])
                             insert_payment_record(current, row['姓名代號'], row['車位編號'])
@@ -732,7 +744,6 @@ with tab5:
                             update_lottery_payment(row['車位編號'], row['繳費狀態'], row['發票號碼'], current, row['姓名代號'])
                             st.success('資料更新成功')
                     else:
-                        update_parking_note(row['車位編號'], row['車位備註'])
                         update_no_application_payment(row['車位編號'], row['繳費狀態'], row['發票號碼'], current, row['姓名代號'])
                         st.success('資料更新成功')
         finally:
@@ -788,7 +799,7 @@ with tab6:
             try:
                 for index, row in edited_df7.iterrows():
                     if row['更新資訊']:
-                        update_parking_space(row['車位編號'], row['使用狀態'], row['車位備註'])
+                        update_parking_note(row['車位編號'],  row['車位備註'],  row['使用狀態'])
                         if exist_no_lottery(row['車牌號碼']):
                             update_no_lottery(row['姓名'], row['單位'], row['聯絡電話'], row['身分註記'], row['車位編號'], row['車牌號碼'])
                         else:
