@@ -745,6 +745,7 @@ with tab5:
                             st.success('資料更新成功')
                     else:
                         update_no_application_payment(row['車位編號'], row['繳費狀態'], row['發票號碼'], current, row['姓名代號'])
+                        update_no_lottery(row['姓名'], row['單位'], row['聯絡電話'], row['身分註記'], row['車位編號'], row['車牌號碼'])
                         st.success('資料更新成功')
         finally:
             upload_db(local_db_path, db_file_id)
