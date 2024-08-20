@@ -206,13 +206,13 @@ def load_data6(current):
             B.車位排序
         FROM 停車位 B
         LEFT JOIN 免申請 A ON A.車位編號 = B.車位編號
-        WHERE B.車位編號 NOT IN (SELECT 車位編號 FROM 免申請 UNION SELECT 車位編號 FROM 繳費紀錄)
+        WHERE B.車位編號 NOT IN (SELECT 車位編號 FROM 免申請 UNION SELECT 車位編號 FROM 繳費紀錄 WHERE C.期別 = ? )
     ) subquery
     ORDER BY 車位排序
     """
 
     try:
-        df = pd.read_sql_query(query, conn, params=(current,))
+        df = pd.read_sql_query(query, conn, params=(current,current))
     except Exception as e:
         st.error(f"SQL query failed: {e}")
     finally:
