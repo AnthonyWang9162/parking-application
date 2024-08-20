@@ -730,7 +730,7 @@ with tab5:
         }
     )
 
-    if st.button('更新資訊確認'):
+    if st.button('更新資訊確'):
         try:
             for index, row in edited_df6.iterrows():
                 if row['更新資訊']:
