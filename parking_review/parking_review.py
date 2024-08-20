@@ -415,7 +415,7 @@ def update_parking_note(space_id, note):
     SET  車位備註 = ? 
     WHERE 車位編號 = ? 
     """
-    cursor.execute(update_query, (note, status, space_id))
+    cursor.execute(update_query, (note, space_id))
     conn.commit()
     conn.close()
 
