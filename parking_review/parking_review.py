@@ -157,7 +157,7 @@ def load_data5(current):
         INNER JOIN 免申請繳費 E ON D.姓名代號 = E.姓名代號
         LEFT JOIN 停車位 C ON D.車位編號 = C.車位編號
         WHERE E.期別 = ?)subquery
-        ORDER BY 車位排序
+        ORDER BY COALESCE(車位排序,車位編號)
     """
     df = pd.read_sql_query(query, conn, params=(current,current))
     conn.close()
