@@ -121,43 +121,49 @@ def load_data4(current):
 def load_data5(current):
     conn = connect_db()
     query = """
-    SELECT 
-        A.期別,
-        A.單位,
-        A.姓名代號,
-        A.姓名,
-        A.聯絡電話,
-        A.身分註記,
-        A.車牌號碼,
-        B.車位編號,
-        C.車位備註,
-        B.繳費狀態,
-        B.發票號碼 
-    FROM 申請紀錄 A
-    INNER JOIN 抽籤繳費 B ON A.期別 = B.期別 AND A.姓名代號 = B.姓名代號
-    LEFT JOIN 停車位 C ON B.車位編號 = C.車位編號
-    WHERE A.期別 = ?
-    UNION
-    SELECT
-        E.期別,
-        D.單位,
-        D.姓名代號,
-        D.姓名,
-        D.聯絡電話,
-        D.身分註記,
-        D.車牌號碼,
-        D.車位編號,
-        C.車位備註,
-        E.繳費狀態,
-        E.發票號碼
-    FROM 免申請 D
-    INNER JOIN 免申請繳費 E ON D.姓名代號 = E.姓名代號
-    LEFT JOIN 停車位 C ON D.車位編號 = C.車位編號
-    WHERE E.期別 = ?
-
+    SELECT * FROM(
+        SELECT 
+            A.期別,
+            A.單位,
+            A.姓名代號,
+            A.姓名,
+            A.聯絡電話,
+            A.身分註記,
+            A.車牌號碼,
+            B.車位編號,
+            C.車位備註,
+            B.繳費狀態,
+            B.發票號碼,
+            C.車位排序
+        FROM 申請紀錄 A
+        INNER JOIN 抽籤繳費 B ON A.期別 = B.期別 AND A.姓名代號 = B.姓名代號
+        LEFT JOIN 停車位 C ON B.車位編號 = C.車位編號
+        WHERE A.期別 = ?
+        UNION
+        SELECT
+            E.期別,
+            D.單位,
+            D.姓名代號,
+            D.姓名,
+            D.聯絡電話,
+            D.身分註記,
+            D.車牌號碼,
+            D.車位編號,
+            C.車位備註,
+            E.繳費狀態,
+            E.發票號碼,
+            C.車位排序
+        FROM 免申請 D
+        INNER JOIN 免申請繳費 E ON D.姓名代號 = E.姓名代號
+        LEFT JOIN 停車位 C ON D.車位編號 = C.車位編號
+        WHERE E.期別 = ?)subquery
+        ORDER BY 車位排序
     """
     df = pd.read_sql_query(query, conn, params=(current,current))
     conn.close()
+    # 如果 '車位排序編號' 列存在则删除
+    if '車位排序' in df.columns:
+        df.drop(columns=['車位排序'], inplace=True)
     return df
 
 
