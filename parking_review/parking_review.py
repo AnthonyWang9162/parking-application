@@ -232,58 +232,6 @@ def load_data6(current):
         df.drop(columns=['車位排序'], inplace=True)
     
     return df
-
-def load_data8(current):
-    conn = connect_db()
-    query = """
-    SELECT * FROM (
-        SELECT 
-            A.姓名代號,
-            A.姓名,
-            A.單位,
-            A.車牌號碼,
-            A.聯絡電話,
-            A.身分註記,
-            A.車位編號,
-            B.車位備註,
-            B.使用狀態,
-            B.車位排序
-        FROM 免申請 A
-        LEFT JOIN 停車位 B ON A.車位編號 = B.車位編號
-        WHERE  A.期別 = ?
-        UNION
-        SELECT 
-            C.姓名代號,
-            C.姓名,
-            C.單位,
-            C.車牌號碼,
-            C.聯絡電話,
-            C.身分註記,
-            D.車位編號,
-            B.車位備註,
-            B.使用狀態,
-            B.車位排序
-        FROM 申請紀錄 C
-        INNER JOIN 繳費紀錄 D ON C.期別 = D.期別 AND C.姓名代號 = D.姓名代號
-        LEFT JOIN 停車位 B ON D.車位編號 = B.車位編號
-        WHERE C.期別 = ?
-    ) subquery
-    ORDER BY 車位排序 
-    """
-
-    try:
-        df = pd.read_sql_query(query, conn, params=(current,current))
-    except Exception as e:
-        st.error(f"SQL query failed: {e}")
-    finally:
-        conn.close()
-    
-    # 如果 '車位排序編號' 列存在则删除
-    if '車位排序' in df.columns:
-        df.drop(columns=['車位排序'], inplace=True)
-    
-    return df
-    
 # 更新数据库中的记录
 def update_record(period, name_code, plate_binding):
     conn = connect_db()
@@ -811,17 +759,6 @@ with tab5:
         finally:
             upload_db(local_db_path, db_file_id)
             st.rerun()  # 重新運行腳本，刷新頁面
-            
-    st.header(f"{current}確定停車名單")
-
-    df8['刪除資訊'] = False
-    editable_columns = ['刪除資訊']
-    disabled_columns = [col for col in df8.columns if col not in editable_columns]
-        
-    edited_df8 = st.data_editor(
-        df8,
-        disabled=disabled_columns
-    )
 
 with tab6:
     st.header("地下停車一覽表") 
@@ -952,5 +889,4 @@ with tab6:
                 st.error(f"資料新增失敗: {e}")
             finally:
                 upload_db(local_db_path, db_file_id)
-                st.rerun()
                 st.rerun()
