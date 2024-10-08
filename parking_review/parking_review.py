@@ -211,7 +211,7 @@ def load_data6(current):
         LEFT JOIN 免申請 A ON A.車位編號 = B.車位編號
         WHERE B.車位編號 NOT IN (SELECT 車位編號 FROM 免申請 UNION SELECT 車位編號 FROM 繳費紀錄 WHERE 期別 = ? )
     ) subquery
-    ORDER BY 車位排序
+    ORDER BY 車位備註
     """
 
     try:
