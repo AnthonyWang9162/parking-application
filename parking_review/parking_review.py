@@ -154,10 +154,13 @@ def load_data5(current):
     INNER JOIN 免申請繳費 E ON D.姓名代號 = E.姓名代號
     LEFT JOIN 停車位 C ON D.車位編號 = C.車位編號
     WHERE E.期別 = ?
+
+    ORDER BY C.車位編號 ASC
     """
     df = pd.read_sql_query(query, conn, params=(current,current))
     conn.close()
     return df
+
 
 def load_data6(current):
     conn = connect_db()
