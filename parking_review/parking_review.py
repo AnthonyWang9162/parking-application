@@ -184,22 +184,7 @@ def load_data6(current):
             B.車位排序
         FROM 免申請 A
         LEFT JOIN 停車位 B ON A.車位編號 = B.車位編號
-        WHERE A.期別 = NULL
-        UNION
-        SELECT 
-            A.姓名代號,
-            A.姓名,
-            A.單位,
-            A.車牌號碼,
-            A.聯絡電話,
-            A.身分註記,
-            A.車位編號,
-            B.車位備註,
-            B.使用狀態,
-            B.車位排序
-        FROM 免申請 A
-        LEFT JOIN 停車位 B ON A.車位編號 = B.車位編號
-        WHERE A.期別 = ?
+        WHERE A.期別 IS NULL OR A.期別 = ?
         UNION
         SELECT 
             C.姓名代號,
