@@ -867,7 +867,7 @@ with tab6:
                 st.rerun()
 
     st.header("免申請停車資料新增")
-    columns = ['期別', '姓名代號', '姓名', '單位', '車牌號碼', '聯絡電話', '身分註記', '車位編號']
+    columns = [ '姓名', '單位', '車牌號碼', '聯絡電話', '身分註記', '車位編號']
     options = ["公務車", "公務車(電動)", "值班", "高階主管", "獨董", "公務保留", "孕婦", "一般(轉讓)", "專案"]
     df8 = pd.DataFrame(columns=columns)
     edited_df8 = st.data_editor(df8, num_rows="dynamic", column_config={
