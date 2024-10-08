@@ -813,15 +813,6 @@ with tab5:
             st.rerun()  # 重新運行腳本，刷新頁面
             
     st.header(f"{current}確定停車名單")
-    # 姓名输入框
-    name = st.text_input("請輸入要篩選的姓名") 
-
-    df8 = load_data7(current)
-
-    # 根據姓名篩選數據
-    if name:
-        df8 = df8[df8['姓名'].str.contains(name)]
-
 
     df8['刪除資訊'] = False
     editable_columns = ['刪除資訊']
