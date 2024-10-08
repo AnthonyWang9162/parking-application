@@ -155,7 +155,6 @@ def load_data5(current):
     LEFT JOIN 停車位 C ON D.車位編號 = C.車位編號
     WHERE E.期別 = ?
 
-    ORDER BY C.車位編號 ASC
     """
     df = pd.read_sql_query(query, conn, params=(current,current))
     conn.close()
