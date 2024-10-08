@@ -370,14 +370,14 @@ def insert_parking_fee(current,employee_id):
     conn.close()
 
     # 新增数据库中的记录
-def insert_no_application(employee_id, name, unit, car_number, contact_info, special_needs, place_id):
+def insert_no_application(current, employee_id, name, unit, car_number, contact_info, special_needs, place_id):
     conn = connect_db()
     cursor = conn.cursor()
     insert_query = """
     INSERT INTO 免申請 (姓名代號,姓名,單位,車牌號碼,聯絡電話,身分註記,車位編號)
     VALUES (?,?,?,?,?,?,?)
     """
-    cursor.execute(insert_query, (employee_id, name, unit, car_number, contact_info, special_needs, place_id))
+    cursor.execute(insert_query, (current, employee_id, name, unit, car_number, contact_info, special_needs, place_id))
     conn.commit()
     conn.close()
 
@@ -867,7 +867,7 @@ with tab6:
                 st.rerun()
 
     st.header("免申請停車資料新增")
-    columns = ['姓名代號', '姓名', '單位', '車牌號碼', '聯絡電話', '身分註記', '車位編號']
+    columns = ['期別', '姓名代號', '姓名', '單位', '車牌號碼', '聯絡電話', '身分註記', '車位編號']
     options = ["公務車", "公務車(電動)", "值班", "高階主管", "獨董", "公務保留", "孕婦", "一般(轉讓)", "專案"]
     df8 = pd.DataFrame(columns=columns)
     edited_df8 = st.data_editor(df8, num_rows="dynamic", column_config={
@@ -882,7 +882,7 @@ with tab6:
     if st.button('新增確認'):
         for index, row in edited_df8.iterrows():
             try:
-                insert_no_application(row['姓名代號'], row['姓名'], row['單位'], row['車牌號碼'], row['聯絡電話'], row['身分註記'], row['車位編號'])
+                insert_no_application(row['期別'], row['姓名代號'], row['姓名'], row['單位'], row['車牌號碼'], row['聯絡電話'], row['身分註記'], row['車位編號'])
                 st.success("資料新增成功")
             except Exception as e:
                 st.error(f"資料新增失敗: {e}")
