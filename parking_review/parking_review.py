@@ -184,57 +184,7 @@ def load_data6(current):
             B.車位排序
         FROM 免申請 A
         LEFT JOIN 停車位 B ON A.車位編號 = B.車位編號
-        WHERE  A.期別 = ?
-        UNION
-        SELECT 
-            C.姓名代號,
-            C.姓名,
-            C.單位,
-            C.車牌號碼,
-            C.聯絡電話,
-            C.身分註記,
-            D.車位編號,
-            B.車位備註,
-            B.使用狀態,
-            B.車位排序
-        FROM 申請紀錄 C
-        INNER JOIN 繳費紀錄 D ON C.期別 = D.期別 AND C.姓名代號 = D.姓名代號
-        LEFT JOIN 停車位 B ON D.車位編號 = B.車位編號
-        WHERE C.期別 = ?
-    ) subquery
-    ORDER BY 車位排序 
-    """
-
-    try:
-        df = pd.read_sql_query(query, conn, params=(current,current))
-    except Exception as e:
-        st.error(f"SQL query failed: {e}")
-    finally:
-        conn.close()
-    
-    # 如果 '車位排序編號' 列存在则删除
-    if '車位排序' in df.columns:
-        df.drop(columns=['車位排序'], inplace=True)
-    
-    return df
-
-def load_data7(current):
-    conn = connect_db()
-    query = """
-    SELECT * FROM (
-        SELECT 
-            A.姓名代號,
-            A.姓名,
-            A.單位,
-            A.車牌號碼,
-            A.聯絡電話,
-            A.身分註記,
-            A.車位編號,
-            B.車位備註,
-            B.使用狀態,
-            B.車位排序
-        FROM 免申請 A
-        LEFT JOIN 停車位 B ON A.車位編號 = B.車位編號
+        WHERE A.期別 IS NULL OR A.期別 = ?
         UNION
         SELECT 
             C.姓名代號,
@@ -271,7 +221,7 @@ def load_data7(current):
     """
 
     try:
-        df = pd.read_sql_query(query, conn, params=(current,current))
+        df = pd.read_sql_query(query, conn, params=(current,current,current))
     except Exception as e:
         st.error(f"SQL query failed: {e}")
     finally:
@@ -282,7 +232,6 @@ def load_data7(current):
         df.drop(columns=['車位排序'], inplace=True)
     
     return df
-
 # 更新数据库中的记录
 def update_record(period, name_code, plate_binding):
     conn = connect_db()
@@ -426,8 +375,8 @@ def insert_no_application(current, employee_id, name, unit, car_number, contact_
     conn = connect_db()
     cursor = conn.cursor()
     insert_query = """
-    INSERT INTO 免申請 (姓名代號,姓名,單位,車牌號碼,聯絡電話,身分註記,車位編號)
-    VALUES (?,?,?,?,?,?,?)
+    INSERT INTO 免申請 (期別,姓名代號,姓名,單位,車牌號碼,聯絡電話,身分註記,車位編號)
+    VALUES (?,?,?,?,?,?,?,?)
     """
     cursor.execute(insert_query, (current, employee_id, name, unit, car_number, contact_info, special_needs, place_id))
     conn.commit()
@@ -811,28 +760,6 @@ with tab5:
             upload_db(local_db_path, db_file_id)
             st.rerun()  # 重新運行腳本，刷新頁面
 
-    st.header(f"{current}確定停車名單")
-
-    # 姓名输入框
-    name = st.text_input("請輸入要篩選的姓名") 
-
-    df7 = load_data6(current)
-
-    # 根據姓名篩選數據
-    if name:
-        df7 = df7[df7['姓名'].str.contains(name)]
-
-
-    df7['刪除資訊'] = False
-    editable_columns = ['刪除資訊']
-    disabled_columns = [col for col in df7.columns if col not in editable_columns]
-        
-    edited_df7 = st.data_editor(
-        df7,
-        disabled=disabled_columns
-    )
-
-
 with tab6:
     st.header("地下停車一覽表") 
     actual_quarter = get_actual_quarter(today.month)
@@ -842,23 +769,23 @@ with tab6:
     options1 = ["公務車", "公務車(電動)", "值班", "高階主管", "獨董", "公務保留", "身心障礙", "孕婦", "保障", "一般","一般(轉讓)","專案"]
     options2 = ["公務車", "公務車(電動)", "值班", "高階主管", "獨董", "公務保留", "身心障礙", "孕婦", "保障", "抽籤"]
 
-    df8 = load_data7(actual_current)
-    df8['更新資訊'] = False
-    df8['刪除資訊'] = False
+    df7 = load_data6(actual_current)
+    df7['更新資訊'] = False
+    df7['刪除資訊'] = False
 
     name = st.text_input("請輸入要篩選的姓名", key="text_input_name_tab6")
     if name:
-        df8['姓名'] = df8['姓名'].astype(str)  # 确保 '姓名' 列是字符串类型
-        df8 = df8[df8['姓名'].str.contains(name)]
+        df7['姓名'] = df7['姓名'].astype(str)  # 确保 '姓名' 列是字符串类型
+        df7 = df7[df7['姓名'].str.contains(name)]
     filter_option = st.selectbox("篩選車位使用狀態", ["所有"] + options2)
     if filter_option != "所有":
-        df8 = df8[df8['使用狀態'] == filter_option]
+        df7 = df7[df7['使用狀態'] == filter_option]
 
     uneditable_columns = ['姓名代號', '車牌號碼']
-    disabled_columns = [col for col in df8.columns if col in uneditable_columns]
+    disabled_columns = [col for col in df7.columns if col in uneditable_columns]
 
-    edited_df8 = st.data_editor(
-        df8,
+    edited_df7 = st.data_editor(
+        df7,
         disabled=disabled_columns,
         column_config={
             "身分註記": st.column_config.SelectboxColumn(
@@ -881,7 +808,7 @@ with tab6:
     with button1:
         if st.button('彙整更新確認'):
             try:
-                for index, row in edited_df8.iterrows():
+                for index, row in edited_df7.iterrows():
                     if row['更新資訊']:
                         update_parking_space(row['車位編號'], row['使用狀態'], row['車位備註'])
                         if exist_no_lottery(row['車牌號碼']):
@@ -899,7 +826,7 @@ with tab6:
             st.session_state.delete_data_list = []
 
         if st.button('刪除資料確認'):
-            for index, row in edited_df8.iterrows():
+            for index, row in edited_df7.iterrows():
                 if row['刪除資訊']:
                     st.session_state.delete_data_list.append(row.to_dict())
 
@@ -962,4 +889,5 @@ with tab6:
                 st.error(f"資料新增失敗: {e}")
             finally:
                 upload_db(local_db_path, db_file_id)
+                st.rerun()
                 st.rerun()
