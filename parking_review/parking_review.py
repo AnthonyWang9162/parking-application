@@ -375,8 +375,8 @@ def insert_no_application(current, employee_id, name, unit, car_number, contact_
     conn = connect_db()
     cursor = conn.cursor()
     insert_query = """
-    INSERT INTO 免申請 (姓名代號,姓名,單位,車牌號碼,聯絡電話,身分註記,車位編號)
-    VALUES (?,?,?,?,?,?,?)
+    INSERT INTO 免申請 (期別,姓名代號,姓名,單位,車牌號碼,聯絡電話,身分註記,車位編號)
+    VALUES (?,?,?,?,?,?,?,?)
     """
     cursor.execute(insert_query, (current, employee_id, name, unit, car_number, contact_info, special_needs, place_id))
     conn.commit()
