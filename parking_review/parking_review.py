@@ -663,7 +663,7 @@ with tab1:
     # 使用 session state 管理未通過的列表
     if 'not_passed_list' not in st.session_state:
         st.session_state.not_passed_list = []
-
+    #測試中關閉寄信功能
     if st.button('審核確認'):
         try:
             for index, row in edited_df1.iterrows():
@@ -675,12 +675,12 @@ with tab1:
                         insert_car_approved_record(row['姓名代號'], row['車牌號碼'])
                         subject_text = '本期停車抽籤申請文件審核通過通知'
                         text = '本期停車抽籤申請資料審核通過，謝謝您。'
-                        send_email(row['姓名代號'], row['姓名'], text, subject_text)
+                        #send_email(row['姓名代號'], row['姓名'], text, subject_text)
                         st.success("審核完成")
                     else:
                         subject_text = '本期停車申請文件審核通過通知'
                         text = '本期停車申請資料審核通過，謝謝您。'
-                        send_email(row['姓名代號'], row['姓名'], text, subject_text)
+                        #send_email(row['姓名代號'], row['姓名'], text, subject_text)
                         st.success("審核完成")
                     if row['身分註記'] != '一般':
                         insert_parking_fee(current, row['姓名代號'])
@@ -696,7 +696,7 @@ with tab1:
             if st.button(f"確認不通過 - {record['姓名']} ({record['車牌號碼']})", key=f"confirm_button_{i}"):
                 subject_text = '本期停車申請文件未審核通過通知'
                 text = '您申請的資料不符合停車要點規定，造成困擾敬請見諒。'
-                send_email(record['姓名代號'], record['姓名'], text, subject_text)
+                #send_email(record['姓名代號'], record['姓名'], text, subject_text)
                 delete_record(record['期別'], record['姓名代號'])
                 st.session_state.not_passed_list.pop(i)  # 移除已處理的記錄
                 st.success(f"審核不通過已確認 - {record['姓名']} ({record['車牌號碼']})")
