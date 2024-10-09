@@ -833,7 +833,7 @@ with tab5:
     if 'delete_parking_list' not in st.session_state:
     st.session_state.delete_parking_list = []
 
-    if st.button('刪除資料確認'):
+    if st.button('刪除資料確認',key="delete_df7_button"):
         for index, row in edited_df7.iterrows():
             if row['刪除資訊']:
                     st.session_state.delete_parking_list.append(row.to_dict())
