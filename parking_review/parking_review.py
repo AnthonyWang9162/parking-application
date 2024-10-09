@@ -17,6 +17,9 @@ from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfbase import pdfmetrics
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
 
+# 获取字体文件路径
+FONT_PATH = 'parking_review/NotoSansTC-SemiBold.ttf'  # 确保将字体文件上传到 Streamlit Cloud 的文件夹
+
 # 设置页面配置
 st.set_page_config(layout="wide",page_title="停車申請管理系統")
 
@@ -80,6 +83,17 @@ def get_actual_quarter(month):
 
 def mask_name(name):
     return name[0] + '○' + name[2:] if len(name) > 1 else name
+
+def generate_title(year, quarter):
+    if quarter == 1:
+        text = f"總管理處{year}年第1期(1-3月)地下停車場員工自用車停車名冊"
+    elif quarter == 2:
+        text = f"總管理處{year}年第2期(4-6月)地下停車場員工自用車停車名冊"
+    elif quarter == 3:
+        text = f"總管理處{year}年第3期(7-9月)地下停車場員工自用車停車名冊"
+    elif quarter == 4:
+        text = f"總管理處{year}年第4期(10-12月)地下停車場員工自用車停車名冊"
+    return text
 
 def convert_custom_df_to_pdf(df):
     buffer = io.BytesIO()
