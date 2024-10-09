@@ -830,7 +830,7 @@ with tab5:
         df7,
         disabled=disabled_columns
     )
-    if 'delete_data_list' not in st.session_state:
+    if 'delete_parking_list' not in st.session_state:
         st.session_state.delete_parking_list = []
 
     if st.button('刪除資料確認'):
