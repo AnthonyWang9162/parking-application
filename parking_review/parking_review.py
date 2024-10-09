@@ -810,10 +810,10 @@ with tab5:
             upload_db(local_db_path, db_file_id)
             st.rerun()  # 重新運行腳本，刷新頁面
     
-    st.header(f"{current}確定停車名單")
+        st.header(f"{current}確定停車名單")
 
     # 姓名输入框
-    name = st.text_input("請輸入要篩選的姓名", key="text_input_name_df7") 
+    name = st.text_input("請輸入要篩選的姓名") 
 
     df7 = load_data6(current)
 
@@ -830,6 +830,26 @@ with tab5:
         df7,
         disabled=disabled_columns
     )
+    if 'delete_data_list' not in st.session_state:
+        st.session_state.delete_parking_list = []
+
+    if st.button('刪除資料確認'):
+        for index, row in edited_df7.iterrows():
+            if row['刪除資訊']:
+                    st.session_state.delete_parking_list.append(row.to_dict())
+
+    if st.session_state.delete_parking_list:
+        st.write("以下是選擇刪除的項目，請確認是否要刪除資料：")
+        for i, row in enumerate(st.session_state.delete_parking_list):
+            if st.button(f"確認刪除 - {row['姓名']} ({row['車牌號碼']})", key=f"confirm_delete_parking_button_{i}"):
+                st.session_state.delete_parking_list.pop(i)
+                if exist_no_lottery(row['車牌號碼']):
+                    delete_no_application(row['車牌號碼'])
+                else:
+                    delete_payment(current, row['姓名代號'])
+                st.success('資料刪除成功')
+                upload_db(local_db_path, db_file_id)
+                st.rerun()
 
 with tab6:
     st.header("地下停車一覽表") 
