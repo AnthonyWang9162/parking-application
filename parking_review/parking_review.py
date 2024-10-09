@@ -10,6 +10,12 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import os
+from reportlab.lib.pagesizes import letter
+from reportlab.lib import colors
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.pdfbase.ttfonts import TTFont
+from reportlab.pdfbase import pdfmetrics
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
 
 # 设置页面配置
 st.set_page_config(layout="wide",page_title="停車申請管理系統")
@@ -71,7 +77,69 @@ def get_actual_quarter(month):
     else:
         raise ValueError("Month must be between 1 and 12")
     return quarter
-# 读取申请记录表
+
+def mask_name(name):
+    return name[0] + '○' + name[2:] if len(name) > 1 else name
+
+def convert_custom_df_to_pdf(df):
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=letter)
+    elements = []
+    year, quarter = get_quarter(today.year, today.month)
+    Taiwan_year = year - 1911
+    date = f"{Taiwan_year:03d}年{today.month:02d}月{today.day:02d}日"
+    title_text = generate_title(Taiwan_year, quarter)
+
+    # 注册字体
+    pdfmetrics.registerFont(TTFont('NotoSans', FONT_PATH))
+
+    # 自定义样式
+    styles = getSampleStyleSheet()
+    styles.add(ParagraphStyle(name='CustomTitle', fontName='NotoSans', fontSize=16, spaceAfter=20, alignment=1, textColor=colors.black))
+    styles.add(ParagraphStyle(name='CustomTableHeader', fontName='NotoSans', fontSize=12, textColor=colors.white, alignment=1))
+    styles.add(ParagraphStyle(name='CustomTableData', fontName='NotoSans', fontSize=12, textColor=colors.black, alignment=1))
+    styles.add(ParagraphStyle(name='CustomFooter', fontName='NotoSans', fontSize=12, textColor=colors.black, spaceBefore=20))
+
+    # Add title
+    title = Paragraph(f'{title_text}', styles['CustomTitle'])
+    elements.append(title)
+    elements.append(Spacer(1, 12))
+
+    # Convert dataframe to table data
+    table_data = [['單位', '姓名', '車位編號']] + df.values.tolist()
+
+    # Style table header and data
+    styled_table_data = []
+    for i, row in enumerate(table_data):
+        styled_row = []
+        for cell in row:
+            if i == 0:  # Header
+                styled_row.append(Paragraph(str(cell), styles['CustomTableHeader']))
+            else:
+                styled_row.append(Paragraph(str(cell), styles['CustomTableData']))
+        styled_table_data.append(styled_row)
+
+    # Create a Table
+    table = Table(styled_table_data)
+    table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),  # Center align all cells
+        ('GRID', (0, 0), (-1, -1), 1, colors.black),
+    ]))
+
+    elements.append(table)
+    elements.append(Spacer(1, 12))
+
+    # Add notes with part of the text in red
+    note_text = (
+        f"備註：此為{date}報表，僅供參考。"
+    )
+    note = Paragraph(note_text, styles['CustomFooter'])
+    elements.append(note)
+
+    doc.build(elements)
+    buffer.seek(0)
+    return buffer
 
 def load_data1():
     conn = connect_db()
@@ -853,6 +921,18 @@ with tab5:
                 st.success('資料刪除成功')
                 upload_db(local_db_path, db_file_id)
                 st.rerun()
+    # 创建用于 PDF 的数据框，仅保留 单位、姓名（遮蔽）、车位编号 三列
+    df7_for_pdf = df7[['單位', '姓名', '車位編號']].copy()
+    df7_for_pdf['姓名'] = df7_for_pdf['姓名'].apply(mask_name)  # 遮蔽姓名
+
+    if st.button('產生本期確定停車電子檔'):
+        pdf_file = convert_custom_df_to_pdf(df7_for_pdf)
+        st.download_button(
+            label="下載繳費結果 PDF",
+            data=pdf_file,
+            file_name=f"{current}地下停車場員工自用車停車名冊.pdf",
+            mime="application/pdf"
+        )
 
 with tab6:
     st.header("地下停車一覽表")
