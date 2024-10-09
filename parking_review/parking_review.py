@@ -810,10 +810,10 @@ with tab5:
             upload_db(local_db_path, db_file_id)
             st.rerun()  # 重新運行腳本，刷新頁面
     
-        st.header(f"{current}確定停車名單")
+    st.header(f"{current}確定停車名單")
 
     # 姓名输入框
-    name = st.text_input("請輸入要篩選的姓名") 
+    name = st.text_input("請輸入要篩選的姓名", key="text_input_name_df7") 
 
     df7 = load_data6(current)
 
