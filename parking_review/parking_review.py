@@ -166,6 +166,56 @@ def load_data5(current):
         df.drop(columns=['車位排序'], inplace=True)
     return df
 
+def load_data6(current):
+    conn = connect_db()
+    query = """
+    SELECT * FROM (
+        SELECT 
+            A.姓名代號,
+            A.姓名,
+            A.單位,
+            A.車牌號碼,
+            A.聯絡電話,
+            A.身分註記,
+            A.車位編號,
+            B.車位備註,
+            B.使用狀態,
+            B.車位排序
+        FROM 免申請 A
+        LEFT JOIN 停車位 B ON A.車位編號 = B.車位編號
+        WHERE  A.期別 = ?
+        UNION
+        SELECT 
+            C.姓名代號,
+            C.姓名,
+            C.單位,
+            C.車牌號碼,
+            C.聯絡電話,
+            C.身分註記,
+            D.車位編號,
+            B.車位備註,
+            B.使用狀態,
+            B.車位排序
+        FROM 申請紀錄 C
+        INNER JOIN 繳費紀錄 D ON C.期別 = D.期別 AND C.姓名代號 = D.姓名代號
+        LEFT JOIN 停車位 B ON D.車位編號 = B.車位編號
+        WHERE C.期別 = ?
+    ) subquery
+    ORDER BY 車位排序 
+    """
+
+    try:
+        df = pd.read_sql_query(query, conn, params=(current,current))
+    except Exception as e:
+        st.error(f"SQL query failed: {e}")
+    finally:
+        conn.close()
+    
+    # 如果 '車位排序編號' 列存在则删除
+    if '車位排序' in df.columns:
+        df.drop(columns=['車位排序'], inplace=True)
+    
+    return df
 
 def load_data7(current):
     conn = connect_db()
@@ -759,6 +809,27 @@ with tab5:
         finally:
             upload_db(local_db_path, db_file_id)
             st.rerun()  # 重新運行腳本，刷新頁面
+    
+        st.header(f"{current}確定停車名單")
+
+    # 姓名输入框
+    name = st.text_input("請輸入要篩選的姓名") 
+
+    df7 = load_data6(current)
+
+    # 根據姓名篩選數據
+    if name:
+        df7 = df7[df7['姓名'].str.contains(name)]
+
+
+    df7['刪除資訊'] = False
+    editable_columns = ['刪除資訊']
+    disabled_columns = [col for col in df7.columns if col not in editable_columns]
+        
+    edited_df7 = st.data_editor(
+        df7,
+        disabled=disabled_columns
+    )
 
 with tab6:
     st.header("地下停車一覽表") 
