@@ -223,7 +223,7 @@ def submit_application(conn, cursor, unit, name, car_number, employee_id, specia
                     subject_text = "本期停車補證明文件通知"
                     send_email(employee_id, name, text, subject_text)                   
             else:
-                cursor.execute("SELECT * FROM 抽籤繳費 WHERE 姓名代號 = ? AND 期別 = ? AND 繳費狀態= '已繳費' ", (employee_id, previous1))
+                cursor.execute("SELECT * FROM 抽籤繳費 WHERE 姓名代號 = ? AND 期別 = ? AND (繳費狀態 = '已繳費' OR 繳費狀態 = '轉讓')", (employee_id, previous1))
                 existing_data = cursor.fetchone()
                 cursor.execute("SELECT * FROM 申請紀錄 WHERE 姓名代號 = ? AND 身分註記 in (?,?) AND 期別 = ?", (employee_id, '一般', '保障', previous1))
                 existing_application_data = cursor.fetchone()
