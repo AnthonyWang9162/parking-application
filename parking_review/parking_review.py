@@ -167,7 +167,7 @@ def load_data5(current):
     return df
 
 
-def load_data6(current):
+def load_data7(current):
     conn = connect_db()
     query = """
     SELECT * FROM (
@@ -769,7 +769,7 @@ with tab6:
     options1 = ["公務車", "公務車(電動)", "值班", "高階主管", "獨董", "公務保留", "身心障礙", "孕婦", "保障", "一般","一般(轉讓)","專案"]
     options2 = ["公務車", "公務車(電動)", "值班", "高階主管", "獨董", "公務保留", "身心障礙", "孕婦", "保障", "抽籤"]
 
-    df7 = load_data6(actual_current)
+    df7 = load_data7(actual_current)
     df7['更新資訊'] = False
     df7['刪除資訊'] = False
 
