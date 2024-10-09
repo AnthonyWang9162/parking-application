@@ -936,13 +936,13 @@ with tab5:
                 upload_db(local_db_path, db_file_id)
                 st.rerun()
     # 创建用于 PDF 的数据框，仅保留 单位、姓名（遮蔽）、车位编号 三列
-    df7_for_pdf = df7[['單位', '姓名', '車位編號']].copy()
+    df7_for_pdf = df7[df7['身分註記'].isin(['一般', '一般(轉讓)'])][['單位', '姓名', '車位編號']].copy()
     df7_for_pdf['姓名'] = df7_for_pdf['姓名'].apply(mask_name)  # 遮蔽姓名
 
     if st.button('產生本期確定停車電子檔'):
         pdf_file = convert_custom_df_to_pdf(df7_for_pdf)
         st.download_button(
-            label="下載繳費結果 PDF",
+            label="下載電子檔",
             data=pdf_file,
             file_name=f"{current}地下停車場員工自用車停車名冊.pdf",
             mime="application/pdf"
