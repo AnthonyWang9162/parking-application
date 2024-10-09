@@ -101,7 +101,6 @@ def convert_custom_df_to_pdf(df):
     elements = []
     year, quarter = get_quarter(today.year, today.month)
     Taiwan_year = year - 1911
-    date = f"{Taiwan_year:03d}年{today.month:02d}月{today.day:02d}日"
     title_text = generate_title(Taiwan_year, quarter)
 
     # 注册字体
@@ -146,7 +145,7 @@ def convert_custom_df_to_pdf(df):
 
     # Add notes with part of the text in red
     note_text = (
-        f"備註：此為{date}報表，僅供參考。"
+        f"備註：本處<font color='red'>審核申請</font>時會<font color='red'>扣除前期停過</font>人員<font color='red'>名單</font>，故<font color='red'>本期已停車</font>之同仁<font color='red'>下期無須申請</font>。"
     )
     note = Paragraph(note_text, styles['CustomFooter'])
     elements.append(note)
