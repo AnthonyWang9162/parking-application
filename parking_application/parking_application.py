@@ -81,7 +81,7 @@ def perform_operation(conn, cursor, unit, name, car_number, employee_id, special
         if lock.is_locked:
             lock.release()
 # 函數來發送電子郵件
-#def send_email(employee_id, name, text, subject_text):
+def send_email(employee_id, name, text, subject_text):
     sender_email = os.getenv("EMAIL_USER")
     sender_password = os.getenv("EMAIL_PASS")
     smtp_server = "smtp.gmail.com"
