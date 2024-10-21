@@ -802,19 +802,25 @@ with tab4:
     editable_column = ['車位編號','分配車位']
     disabled_columns2 = [col for col in df5.columns if col not in editable_column]
 
+    # 新增"是否重複車位"選項
+    show_duplicate = st.checkbox('是否重複車位')
+
+    if show_duplicate:
+        # 找出重複的車位編號
+        duplicated_values = df5[df5.duplicated(subset='車位編號', keep=False)]
+        df5 = duplicated_values
+
     edited_df5 = st.data_editor(
         df5,
-        disabled=disabled_columns2)
-    
+        disabled=disabled_columns2
+    )
+
     if st.button('分配車位確認'):
         try:
             for index, row in edited_df5.iterrows():
                 if row['分配車位']:
-                    parking_distribution(row['車位編號'],row['期別'],row['姓名代號'])
+                    parking_distribution(row['車位編號'], row['期別'], row['姓名代號'])
                     st.success('車位分配成功')
-        finally:
-            upload_db(local_db_path, db_file_id)
-            st.rerun()  # 重新運行腳本，刷新頁面
 with tab5:
     st.header(f"{current}員工停車繳費維護")
 
