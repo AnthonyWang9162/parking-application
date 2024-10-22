@@ -920,6 +920,13 @@ with tab5:
     # 根據姓名篩選數據
     if name:
         df7 = df7[df7['姓名'].str.contains(name)]
+        # 添加"是否重複車位"選項
+    
+    show_duplicate = st.checkbox('確認重複車位', key = 'df7')
+    if show_duplicate:
+        # 找出重複的車位編號
+        duplicated_values = df7[df7.duplicated(subset='車位編號', keep=False)]
+        df7 = duplicated_values
 
     df7['刪除資訊'] = False
     editable_columns = ['刪除資訊']
@@ -984,6 +991,12 @@ with tab6:
     filter_option = st.selectbox("篩選車位使用狀態", ["所有"] + options2, key="filter_option_tab6")
     if filter_option != "所有":
         df7 = df7[df7['使用狀態'] == filter_option]
+        
+    show_duplicate = st.checkbox('確認重複車位', key = 'df7-1')
+    if show_duplicate:
+        # 找出重複的車位編號
+        duplicated_values = df7[df7.duplicated(subset='車位編號', keep=False)]
+        df7 = duplicated_values
 
     uneditable_columns = ['姓名代號', '車牌號碼']
     disabled_columns = [col for col in df7.columns if col in uneditable_columns]
