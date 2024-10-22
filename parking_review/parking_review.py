@@ -647,464 +647,490 @@ db_file_id = '1_TArAUZyzzZuLX3y320VpytfBlaoUGBB'
 local_db_path = '/tmp/test.db'
 download_db(db_file_id, local_db_path)
 
-st.title("停車申請管理系統")
-# 创建选项卡
-tab1, tab2, tab4, tab5, tab6= st.tabs(["停車申請待審核", f"{current}停車申請一覽表", "保障停車分配車位", f"{current}員工停車繳費維護", "地下停車一覽表"])
+# 設定有效的帳號和密碼
+VALID_USERNAME = "admin"
+VALID_PASSWORD = "password123"
 
-with tab1:
-    st.header("停車申請待審核")
-    df1 = load_data1()
-    df1['通過'] = False
-    df1['不通過'] = False
-    editable_columns = ['通過', '不通過']
-    disabled_columns = [col for col in df1.columns if col not in editable_columns]
-    edited_df1 = st.data_editor(df1, disabled=disabled_columns)
+# Session state 紀錄登入狀態
+if 'logged_in' not in st.session_state:
+    st.session_state['logged_in'] = False
 
-    # 使用 session state 管理未通過的列表
-    if 'not_passed_list' not in st.session_state:
-        st.session_state.not_passed_list = []
-    #測試中關閉寄信功能
-    if st.button('審核確認'):
-        try:
-            for index, row in edited_df1.iterrows():
-                if row['通過'] and row['不通過']:
-                    st.error("欄位有誤，請調整後再試")
-                elif row['通過']:
-                    update_record(row['期別'], row['姓名代號'], True)
-                    if new_approved_car_record(row['姓名代號'], row['車牌號碼']):
-                        insert_car_approved_record(row['姓名代號'], row['車牌號碼'])
-                        subject_text = '本期停車抽籤申請文件審核通過通知'
-                        text = '本期停車抽籤申請資料審核通過，謝謝您。'
-                        #send_email(row['姓名代號'], row['姓名'], text, subject_text)
-                        st.success("審核完成")
-                    else:
-                        subject_text = '本期停車申請文件審核通過通知'
-                        text = '本期停車申請資料審核通過，謝謝您。'
-                        #send_email(row['姓名代號'], row['姓名'], text, subject_text)
-                        st.success("審核完成")
-                    if row['身分註記'] != '一般':
-                        insert_parking_fee(current, row['姓名代號'])
-                elif row['不通過']:
-                    st.session_state.not_passed_list.append(row.to_dict())
-        finally:
-            upload_db(local_db_path, db_file_id)
-            st.rerun()
+# 簡單的登入函數
+def login(username, password):
+    if username == VALID_USERNAME and password == VALID_PASSWORD:
+        st.session_state['logged_in'] = True
+        st.success("登入成功!")
+    else:
+        st.error("帳號或密碼錯誤，請再試一次。")
 
-    if st.session_state.not_passed_list:
-        st.write("以下是審核不通過的申請，請確認是否確定不通過：")
-        for i, record in enumerate(st.session_state.not_passed_list):
-            if st.button(f"確認不通過 - {record['姓名']} ({record['車牌號碼']})", key=f"confirm_button_{i}"):
-                subject_text = '本期停車申請文件未審核通過通知'
-                text = '您申請的資料不符合停車要點規定，造成困擾敬請見諒。'
-                #send_email(record['姓名代號'], record['姓名'], text, subject_text)
-                delete_record(record['期別'], record['姓名代號'])
-                st.session_state.not_passed_list.pop(i)  # 移除已處理的記錄
-                st.success(f"審核不通過已確認 - {record['姓名']} ({record['車牌號碼']})")
-                upload_db(local_db_path, db_file_id)
-                st.rerun()  # 重新運行腳本，刷新頁面
+# 若未登入，顯示登入表單
+if not st.session_state['logged_in']:
+    st.title("登入頁面")
+    username = st.text_input("帳號")
+    password = st.text_input("密碼", type="password")
+    if st.button("登入"):
+        login(username, password)
 
-with tab2:
-    st.header(f"{current}停車申請一覽表")
-    name = st.text_input("請輸入要篩選的姓名", key="name_input_tab2") 
-    df2 = load_data2(current)
-    if name:
-        df2 = df2[df2['姓名'].str.contains(name)]
-    df2['更新資料'] = False
-    df2['刪除資料'] = False
-    editable_columns = ['車牌號碼','聯絡電話','更新資料','刪除資料']
-    disabled_columns = [col for col in df2.columns if col not in editable_columns]
-    edited_df2 = st.data_editor(df2, disabled=disabled_columns, key="data_editor_tab2")
+# 若已登入，顯示主頁內容
+else:
+    st.title("停車申請管理系統")
+    # 创建选项卡
+    tab1, tab2, tab4, tab5, tab6= st.tabs(["停車申請待審核", f"{current}停車申請一覽表", "保障停車分配車位", f"{current}員工停車繳費維護", "地下停車一覽表"])
     
-    button1, button2, button3 = st.columns(3)
+    with tab1:
+        st.header("停車申請待審核")
+        df1 = load_data1()
+        df1['通過'] = False
+        df1['不通過'] = False
+        editable_columns = ['通過', '不通過']
+        disabled_columns = [col for col in df1.columns if col not in editable_columns]
+        edited_df1 = st.data_editor(df1, disabled=disabled_columns)
     
-    with button1:
-        if st.button('刪除確認', key="delete_confirm_button"):
+        # 使用 session state 管理未通過的列表
+        if 'not_passed_list' not in st.session_state:
+            st.session_state.not_passed_list = []
+        #測試中關閉寄信功能
+        if st.button('審核確認'):
             try:
-                for index, row in edited_df2.iterrows():
-                    if row['刪除資料']:
-                        delete_record(row['期別'], row['姓名代號'])
-                        st.success("資料刪除成功")
-            finally:
-                upload_db(local_db_path, db_file_id)
-                st.rerun()  # 重新運行腳本，刷新頁面
-                
-    with button2:
-        if st.button('保障停車準備分配車位', key="prepare_parking_button"):
-            try:
-                for index, row in edited_df2.iterrows():
-                    if row['身分註記'] != '一般' and row['車牌綁定'] == True:
-                        insert_parking_fee(row['期別'], row['姓名代號'])
-                st.success('免抽籤資料匯入成功')
-            except:
-                st.error('本期免抽籤資料已經匯入進繳費表')
-            finally:
-                upload_db(local_db_path, db_file_id)
-                st.rerun()  # 重新運行腳本，刷新頁面
-
-    with button3:
-        if st.button('更新確認', key="update_confirm_button"):
-            try:
-                for index, row in edited_df2.iterrows():
-                    if row['更新資料']:
-                        update_application_record(row['期別'], row['姓名'], row['單位'], row['姓名代號'], row['車牌號碼'], row['聯絡電話'])
-                st.success('車牌更新成功')
-            finally:
-                upload_db(local_db_path, db_file_id)
-                st.rerun()  # 重新運行腳本，刷新頁面
-with tab4:
-    st.header("地下停車位使用狀態維護")  
-    # 加載數據
-    df4 = load_data3()
-    df4['更新資料'] = False
-
-    # 定義下拉選單選項
-    options = ["公務車", "公務車(電動)", "值班", "高階主管", "獨董", "公務保留", "身心障礙", "孕婦", "保障", "抽籤"]
-
-    # 添加篩選條件選擇框
-    filter_option = st.selectbox("篩選使用狀態", ["所有"] + options)
-
-    # 根據篩選條件過濾數據框
-    if filter_option != "所有":
-        df4 = df4[df4['使用狀態'] == filter_option]
-
-    # 禁用的列
-    column1 = ['車位編號']
-    disabled_columns1 = [col for col in df4.columns if col in column1]
-
-    # 顯示可編輯的數據框
-    edited_df4 = st.data_editor(
-        df4,
-        disabled=disabled_columns1,
-        column_config={
-            "使用狀態": st.column_config.SelectboxColumn(
-                "使用狀態",
-                options=options,
-                help="請選擇該車位用途",
-                required=True
-            )
-        }
-    )
-
-    # 更新確認按鈕
-    if st.button('更新確認'):
-        try:
-            for index, row in edited_df4.iterrows():
-                if row['更新資料']:
-                    update_parking_space(row['車位編號'], row['使用狀態'], row['車位備註'])
-                    st.success('資料更新成功')
-        finally:
-            upload_db(local_db_path, db_file_id)
-            st.rerun()  # 重新運行腳本，刷新頁面
-
-    st.header("保障停車分配車位")
-    df5 = load_data4(current)
-    df5['分配車位'] = False
-    editable_column = ['車位編號','分配車位']
-    disabled_columns2 = [col for col in df5.columns if col not in editable_column]
-
-    # 添加"是否重複車位"選項
-    show_duplicate = st.checkbox('確認重複車位', key = 'df5')
-
-    if show_duplicate:
-        # 找出重複的車位編號
-        duplicated_values = df5[df5.duplicated(subset='車位編號', keep=False)]
-        df5 = duplicated_values
-
-    edited_df5 = st.data_editor(
-        df5,
-        disabled=disabled_columns2
-    )
-
-    if st.button('分配車位確認'):
-        try:
-            for index, row in edited_df5.iterrows():
-                if row['分配車位']:
-                    parking_distribution(row['車位編號'], row['期別'], row['姓名代號'])
-                    st.success('車位分配成功')
-        finally:
-            upload_db(local_db_path, db_file_id)
-            st.rerun()  # 重新運行腳本，刷新頁面
-with tab5:
-    st.header(f"{current}員工停車繳費維護")
-
-    # 姓名输入框
-    name = st.text_input("請輸入要篩選的姓名", key="text_input_name_tab5")
-
-    df6 = load_data5(current)
-
-    # 篩選條件下拉選單
-    filter_option1 = st.selectbox(
-        "選擇車位篩選條件",
-        ["所有", "正取", "備取"],
-        key="filter_option1"
-    )
-    options = ['已繳費', '未繳費', '放棄']
-    # 添加篩選條件選擇框
-    filter_option2 = st.selectbox("篩選繳費狀態", ["所有"] + options, key="filter_option2")
-
-    # 根據篩選條件過濾數據框
-    if filter_option2 != "所有":
-        df6 = df6[df6['繳費狀態'] == filter_option2]
-
-    # 根據姓名篩選數據
-    if name:
-        df6 = df6[df6['姓名'].str.contains(name)]
-
-    # 确保 '車位編號' 列为字符串，并填充 NaN 值
-    df6['車位編號'] = df6['車位編號'].astype(str).fillna('')
-
-    # 根據選擇的篩選條件進行進一步篩選
-    if filter_option1 == "正取":
-        df6 = df6[df6['車位編號'].str.startswith('B')]
-    elif filter_option1 == "備取":
-        df6 = df6[df6['車位編號'].str.startswith('備取')]
-
-    # 添加"是否重複車位"選項
-    show_duplicate = st.checkbox('確認重複車位', key = 'df6')
-
-    if show_duplicate:
-        # 找出重複的車位編號
-        duplicated_values = df6[df6.duplicated(subset='車位編號', keep=False)]
-        df6 = duplicated_values
-
-    # 添加電子郵件列
-    df6['電子郵件'] = df6['姓名代號'].apply(lambda x: f"u{x}@taipower.com.tw")
-
-    df6['更新資訊'] = False
-    editable_columns = ['車位編號', '車位備註', '繳費狀態', '發票號碼', '更新資訊']
-    options = ['已繳費', '未繳費', '放棄', '轉讓']
-    disabled_columns = [col for col in df6.columns if col not in editable_columns]
-
-    edited_df6 = st.data_editor(
-        df6,
-        disabled=disabled_columns,
-        column_config={
-            "繳費狀態": st.column_config.SelectboxColumn(
-                "繳費狀態",
-                options=options,
-                help="請選擇繳費狀態",
-                required=True
-            )
-        },
-        key="data_editor_df6"
-    )
-
-    if st.button('更新資訊確認', key="update_info_button"):
-        try:
-            for index, row in edited_df6.iterrows():
-                if row['更新資訊']:
-                    update_parking_note(row['車位編號'], row['車位備註'])
-                    if exist_lottery_payment(current, row['姓名代號']):
-                        if row['繳費狀態'] == '已繳費' and new_payment_record(current, row['姓名代號']):
-                            update_lottery_payment(row['車位編號'], row['繳費狀態'], row['發票號碼'], current, row['姓名代號'])
-                            insert_payment_record(current, row['姓名代號'], row['車位編號'])
-                            st.success('資料更新成功')
+                for index, row in edited_df1.iterrows():
+                    if row['通過'] and row['不通過']:
+                        st.error("欄位有誤，請調整後再試")
+                    elif row['通過']:
+                        update_record(row['期別'], row['姓名代號'], True)
+                        if new_approved_car_record(row['姓名代號'], row['車牌號碼']):
+                            insert_car_approved_record(row['姓名代號'], row['車牌號碼'])
+                            subject_text = '本期停車抽籤申請文件審核通過通知'
+                            text = '本期停車抽籤申請資料審核通過，謝謝您。'
+                            #send_email(row['姓名代號'], row['姓名'], text, subject_text)
+                            st.success("審核完成")
                         else:
-                            update_lottery_payment(row['車位編號'], row['繳費狀態'], row['發票號碼'], current, row['姓名代號'])
-                            st.success('資料更新成功')
-                    else:
-                        update_no_application_payment(row['車位編號'], row['繳費狀態'], row['發票號碼'], current, row['姓名代號'])
-                        update_no_lottery(row['姓名'], row['單位'], row['聯絡電話'], row['身分註記'], row['車位編號'], row['車牌號碼'])
-                        st.success('資料更新成功')
-        finally:
-            upload_db(local_db_path, db_file_id)
-            st.rerun()
-
-    st.header(f"{current}地下停車場員工自用車停車名單")
-
-    # 姓名输入框
-    name = st.text_input("請輸入要篩選的姓名", key="text_input_name_df7")
-
-    df7 = load_data6(current)
-
-    # 根據姓名篩選數據
-    if name:
-        df7 = df7[df7['姓名'].str.contains(name)]
-        # 添加"是否重複車位"選項
-    
-    show_duplicate = st.checkbox('確認重複車位', key = 'df7')
-    if show_duplicate:
-        # 找出重複的車位編號
-        duplicated_values = df7[df7.duplicated(subset='車位編號', keep=False)]
-        df7 = duplicated_values
-
-    df7['刪除資訊'] = False
-    editable_columns = ['刪除資訊']
-    disabled_columns = [col for col in df7.columns if col not in editable_columns]
-
-    edited_df7 = st.data_editor(
-        df7,
-        disabled=disabled_columns,
-        key="data_editor_df7"
-    )
-
-    if 'delete_parking_list' not in st.session_state:
-        st.session_state.delete_parking_list = []
-
-    if st.button('刪除資料確認', key="delete_df7_button"):
-        for index, row in edited_df7.iterrows():
-            if row['刪除資訊']:
-                st.session_state.delete_parking_list.append(row.to_dict())
-
-    if st.session_state.delete_parking_list:
-        st.write("以下是選擇刪除的項目，請確認是否要刪除資料：")
-        for i, row in enumerate(st.session_state.delete_parking_list):
-            if st.button(f"確認刪除 - {row['姓名']} ({row['車牌號碼']})", key=f"confirm_delete_parking_button_{i}"):
-                st.session_state.delete_parking_list.pop(i)
-                if exist_no_lottery(row['車牌號碼']):
-                    delete_no_application(row['車牌號碼'])
-                else:
-                    delete_payment(current, row['姓名代號'])
-                st.success('資料刪除成功')
+                            subject_text = '本期停車申請文件審核通過通知'
+                            text = '本期停車申請資料審核通過，謝謝您。'
+                            #send_email(row['姓名代號'], row['姓名'], text, subject_text)
+                            st.success("審核完成")
+                        if row['身分註記'] != '一般':
+                            insert_parking_fee(current, row['姓名代號'])
+                    elif row['不通過']:
+                        st.session_state.not_passed_list.append(row.to_dict())
+            finally:
                 upload_db(local_db_path, db_file_id)
                 st.rerun()
-    # 產生pdf，只保留'單位', '姓名', '車位編號'三欄
-    df7_for_pdf = df7[df7['身分註記'].isin(['一般', '一般(轉讓)'])][['單位', '姓名', '車位編號']].copy()
-    df7_for_pdf['姓名'] = df7_for_pdf['姓名'].apply(mask_name)  # 遮蔽姓名
-
-    if st.button(f"產生{current}地下停車場員工自用車停車名冊電子檔"):
-        pdf_file = convert_custom_df_to_pdf(df7_for_pdf)
-        st.download_button(
-            label="下載電子檔",
-            data=pdf_file,
-            file_name=f"{current}地下停車場員工自用車停車名冊.pdf",
-            mime="application/pdf"
-        )
-
-with tab6:
-    st.header("地下停車一覽表")
-    actual_quarter = get_actual_quarter(today.month)
-    Taiwan_year = today.year - 1911
-    actual_current = f"{Taiwan_year}{actual_quarter:02}"
-
-    options1 = ["公務車", "公務車(電動)", "值班", "高階主管", "獨董", "公務保留", "身心障礙", "孕婦", "保障", "一般", "一般(轉讓)", "專案"]
-    options2 = ["公務車", "公務車(電動)", "值班", "高階主管", "獨董", "公務保留", "身心障礙", "孕婦", "保障", "抽籤"]
-
-    df7 = load_data7(actual_current)
-    df7['更新資訊'] = False
-    df7['刪除資訊'] = False
-
-    name = st.text_input("請輸入要篩選的姓名", key="text_input_name_tab6")
-    if name:
-        df7['姓名'] = df7['姓名'].astype(str)  # 确保 '姓名' 列是字符串类型
-        df7 = df7[df7['姓名'].str.contains(name)]
-    filter_option = st.selectbox("篩選車位使用狀態", ["所有"] + options2, key="filter_option_tab6")
-    if filter_option != "所有":
-        df7 = df7[df7['使用狀態'] == filter_option]
+    
+        if st.session_state.not_passed_list:
+            st.write("以下是審核不通過的申請，請確認是否確定不通過：")
+            for i, record in enumerate(st.session_state.not_passed_list):
+                if st.button(f"確認不通過 - {record['姓名']} ({record['車牌號碼']})", key=f"confirm_button_{i}"):
+                    subject_text = '本期停車申請文件未審核通過通知'
+                    text = '您申請的資料不符合停車要點規定，造成困擾敬請見諒。'
+                    #send_email(record['姓名代號'], record['姓名'], text, subject_text)
+                    delete_record(record['期別'], record['姓名代號'])
+                    st.session_state.not_passed_list.pop(i)  # 移除已處理的記錄
+                    st.success(f"審核不通過已確認 - {record['姓名']} ({record['車牌號碼']})")
+                    upload_db(local_db_path, db_file_id)
+                    st.rerun()  # 重新運行腳本，刷新頁面
+    
+    with tab2:
+        st.header(f"{current}停車申請一覽表")
+        name = st.text_input("請輸入要篩選的姓名", key="name_input_tab2") 
+        df2 = load_data2(current)
+        if name:
+            df2 = df2[df2['姓名'].str.contains(name)]
+        df2['更新資料'] = False
+        df2['刪除資料'] = False
+        editable_columns = ['車牌號碼','聯絡電話','更新資料','刪除資料']
+        disabled_columns = [col for col in df2.columns if col not in editable_columns]
+        edited_df2 = st.data_editor(df2, disabled=disabled_columns, key="data_editor_tab2")
         
-    show_duplicate = st.checkbox('確認重複車位', key = 'df7-1')
-    if show_duplicate:
-        # 找出重複的車位編號
-        duplicated_values = df7[df7.duplicated(subset='車位編號', keep=False)]
-        df7 = duplicated_values
-
-    uneditable_columns = ['姓名代號', '車牌號碼']
-    disabled_columns = [col for col in df7.columns if col in uneditable_columns]
-
-    edited_df7 = st.data_editor(
-        df7,
-        disabled=disabled_columns,
-        column_config={
-            "身分註記": st.column_config.SelectboxColumn(
-                "身分註記",
-                options=options1,
-                help="請選擇要調整的身分註記",
-                required=True
-            ),
-            "使用狀態": st.column_config.SelectboxColumn(
-                "使用狀態",
-                options=options2,
-                help="請選擇該車位用途",
-                required=True
-            )
-        },
-        key="data_editor_df7_tab6"
-    )
-
-    button1, button2, button3 = st.columns(3)
-
-    with button1:
-        if st.button('彙整更新確認', key="update_button_tab6"):
+        button1, button2, button3 = st.columns(3)
+        
+        with button1:
+            if st.button('刪除確認', key="delete_confirm_button"):
+                try:
+                    for index, row in edited_df2.iterrows():
+                        if row['刪除資料']:
+                            delete_record(row['期別'], row['姓名代號'])
+                            st.success("資料刪除成功")
+                finally:
+                    upload_db(local_db_path, db_file_id)
+                    st.rerun()  # 重新運行腳本，刷新頁面
+                    
+        with button2:
+            if st.button('保障停車準備分配車位', key="prepare_parking_button"):
+                try:
+                    for index, row in edited_df2.iterrows():
+                        if row['身分註記'] != '一般' and row['車牌綁定'] == True:
+                            insert_parking_fee(row['期別'], row['姓名代號'])
+                    st.success('免抽籤資料匯入成功')
+                except:
+                    st.error('本期免抽籤資料已經匯入進繳費表')
+                finally:
+                    upload_db(local_db_path, db_file_id)
+                    st.rerun()  # 重新運行腳本，刷新頁面
+    
+        with button3:
+            if st.button('更新確認', key="update_confirm_button"):
+                try:
+                    for index, row in edited_df2.iterrows():
+                        if row['更新資料']:
+                            update_application_record(row['期別'], row['姓名'], row['單位'], row['姓名代號'], row['車牌號碼'], row['聯絡電話'])
+                    st.success('車牌更新成功')
+                finally:
+                    upload_db(local_db_path, db_file_id)
+                    st.rerun()  # 重新運行腳本，刷新頁面
+    with tab4:
+        st.header("地下停車位使用狀態維護")  
+        # 加載數據
+        df4 = load_data3()
+        df4['更新資料'] = False
+    
+        # 定義下拉選單選項
+        options = ["公務車", "公務車(電動)", "值班", "高階主管", "獨董", "公務保留", "身心障礙", "孕婦", "保障", "抽籤"]
+    
+        # 添加篩選條件選擇框
+        filter_option = st.selectbox("篩選使用狀態", ["所有"] + options)
+    
+        # 根據篩選條件過濾數據框
+        if filter_option != "所有":
+            df4 = df4[df4['使用狀態'] == filter_option]
+    
+        # 禁用的列
+        column1 = ['車位編號']
+        disabled_columns1 = [col for col in df4.columns if col in column1]
+    
+        # 顯示可編輯的數據框
+        edited_df4 = st.data_editor(
+            df4,
+            disabled=disabled_columns1,
+            column_config={
+                "使用狀態": st.column_config.SelectboxColumn(
+                    "使用狀態",
+                    options=options,
+                    help="請選擇該車位用途",
+                    required=True
+                )
+            }
+        )
+    
+        # 更新確認按鈕
+        if st.button('更新確認'):
             try:
-                for index, row in edited_df7.iterrows():
-                    if row['更新資訊']:
+                for index, row in edited_df4.iterrows():
+                    if row['更新資料']:
                         update_parking_space(row['車位編號'], row['使用狀態'], row['車位備註'])
-                        if exist_no_lottery(row['車牌號碼']):
-                            update_no_lottery(row['姓名'], row['單位'], row['聯絡電話'], row['身分註記'], row['車位編號'], row['車牌號碼'])
+                        st.success('資料更新成功')
+            finally:
+                upload_db(local_db_path, db_file_id)
+                st.rerun()  # 重新運行腳本，刷新頁面
+    
+        st.header("保障停車分配車位")
+        df5 = load_data4(current)
+        df5['分配車位'] = False
+        editable_column = ['車位編號','分配車位']
+        disabled_columns2 = [col for col in df5.columns if col not in editable_column]
+    
+        # 添加"是否重複車位"選項
+        show_duplicate = st.checkbox('確認重複車位', key = 'df5')
+    
+        if show_duplicate:
+            # 找出重複的車位編號
+            duplicated_values = df5[df5.duplicated(subset='車位編號', keep=False)]
+            df5 = duplicated_values
+    
+        edited_df5 = st.data_editor(
+            df5,
+            disabled=disabled_columns2
+        )
+    
+        if st.button('分配車位確認'):
+            try:
+                for index, row in edited_df5.iterrows():
+                    if row['分配車位']:
+                        parking_distribution(row['車位編號'], row['期別'], row['姓名代號'])
+                        st.success('車位分配成功')
+            finally:
+                upload_db(local_db_path, db_file_id)
+                st.rerun()  # 重新運行腳本，刷新頁面
+    with tab5:
+        st.header(f"{current}員工停車繳費維護")
+    
+        # 姓名输入框
+        name = st.text_input("請輸入要篩選的姓名", key="text_input_name_tab5")
+    
+        df6 = load_data5(current)
+    
+        # 篩選條件下拉選單
+        filter_option1 = st.selectbox(
+            "選擇車位篩選條件",
+            ["所有", "正取", "備取"],
+            key="filter_option1"
+        )
+        options = ['已繳費', '未繳費', '放棄']
+        # 添加篩選條件選擇框
+        filter_option2 = st.selectbox("篩選繳費狀態", ["所有"] + options, key="filter_option2")
+    
+        # 根據篩選條件過濾數據框
+        if filter_option2 != "所有":
+            df6 = df6[df6['繳費狀態'] == filter_option2]
+    
+        # 根據姓名篩選數據
+        if name:
+            df6 = df6[df6['姓名'].str.contains(name)]
+    
+        # 确保 '車位編號' 列为字符串，并填充 NaN 值
+        df6['車位編號'] = df6['車位編號'].astype(str).fillna('')
+    
+        # 根據選擇的篩選條件進行進一步篩選
+        if filter_option1 == "正取":
+            df6 = df6[df6['車位編號'].str.startswith('B')]
+        elif filter_option1 == "備取":
+            df6 = df6[df6['車位編號'].str.startswith('備取')]
+    
+        # 添加"是否重複車位"選項
+        show_duplicate = st.checkbox('確認重複車位', key = 'df6')
+    
+        if show_duplicate:
+            # 找出重複的車位編號
+            duplicated_values = df6[df6.duplicated(subset='車位編號', keep=False)]
+            df6 = duplicated_values
+    
+        # 添加電子郵件列
+        df6['電子郵件'] = df6['姓名代號'].apply(lambda x: f"u{x}@taipower.com.tw")
+    
+        df6['更新資訊'] = False
+        editable_columns = ['車位編號', '車位備註', '繳費狀態', '發票號碼', '更新資訊']
+        options = ['已繳費', '未繳費', '放棄', '轉讓']
+        disabled_columns = [col for col in df6.columns if col not in editable_columns]
+    
+        edited_df6 = st.data_editor(
+            df6,
+            disabled=disabled_columns,
+            column_config={
+                "繳費狀態": st.column_config.SelectboxColumn(
+                    "繳費狀態",
+                    options=options,
+                    help="請選擇繳費狀態",
+                    required=True
+                )
+            },
+            key="data_editor_df6"
+        )
+    
+        if st.button('更新資訊確認', key="update_info_button"):
+            try:
+                for index, row in edited_df6.iterrows():
+                    if row['更新資訊']:
+                        update_parking_note(row['車位編號'], row['車位備註'])
+                        if exist_lottery_payment(current, row['姓名代號']):
+                            if row['繳費狀態'] == '已繳費' and new_payment_record(current, row['姓名代號']):
+                                update_lottery_payment(row['車位編號'], row['繳費狀態'], row['發票號碼'], current, row['姓名代號'])
+                                insert_payment_record(current, row['姓名代號'], row['車位編號'])
+                                st.success('資料更新成功')
+                            else:
+                                update_lottery_payment(row['車位編號'], row['繳費狀態'], row['發票號碼'], current, row['姓名代號'])
+                                st.success('資料更新成功')
                         else:
-                            update_application_record(actual_current, row['姓名'], row['單位'], row['姓名代號'], row['車牌號碼'], row['聯絡電話'])
-                            update_confirm_parking(row['車位編號'], actual_current, row['姓名代號'])
-                st.success('資料更新成功')
+                            update_no_application_payment(row['車位編號'], row['繳費狀態'], row['發票號碼'], current, row['姓名代號'])
+                            update_no_lottery(row['姓名'], row['單位'], row['聯絡電話'], row['身分註記'], row['車位編號'], row['車牌號碼'])
+                            st.success('資料更新成功')
             finally:
                 upload_db(local_db_path, db_file_id)
                 st.rerun()
-
-    with button2:
-        if 'delete_data_list' not in st.session_state:
-            st.session_state.delete_data_list = []
-
-        if st.button('刪除資料確認', key="delete_button_tab6"):
+    
+        st.header(f"{current}地下停車場員工自用車停車名單")
+    
+        # 姓名输入框
+        name = st.text_input("請輸入要篩選的姓名", key="text_input_name_df7")
+    
+        df7 = load_data6(current)
+    
+        # 根據姓名篩選數據
+        if name:
+            df7 = df7[df7['姓名'].str.contains(name)]
+            # 添加"是否重複車位"選項
+        
+        show_duplicate = st.checkbox('確認重複車位', key = 'df7')
+        if show_duplicate:
+            # 找出重複的車位編號
+            duplicated_values = df7[df7.duplicated(subset='車位編號', keep=False)]
+            df7 = duplicated_values
+    
+        df7['刪除資訊'] = False
+        editable_columns = ['刪除資訊']
+        disabled_columns = [col for col in df7.columns if col not in editable_columns]
+    
+        edited_df7 = st.data_editor(
+            df7,
+            disabled=disabled_columns,
+            key="data_editor_df7"
+        )
+    
+        if 'delete_parking_list' not in st.session_state:
+            st.session_state.delete_parking_list = []
+    
+        if st.button('刪除資料確認', key="delete_df7_button"):
             for index, row in edited_df7.iterrows():
                 if row['刪除資訊']:
-                    st.session_state.delete_data_list.append(row.to_dict())
-
-        if st.session_state.delete_data_list:
+                    st.session_state.delete_parking_list.append(row.to_dict())
+    
+        if st.session_state.delete_parking_list:
             st.write("以下是選擇刪除的項目，請確認是否要刪除資料：")
-            for i, row in enumerate(st.session_state.delete_data_list):
-                if st.button(f"確認刪除 - {row['姓名']} ({row['車牌號碼']})", key=f"confirm_delete_button_tab6_{i}"):
-                    st.session_state.delete_data_list.pop(i)
+            for i, row in enumerate(st.session_state.delete_parking_list):
+                if st.button(f"確認刪除 - {row['姓名']} ({row['車牌號碼']})", key=f"confirm_delete_parking_button_{i}"):
+                    st.session_state.delete_parking_list.pop(i)
                     if exist_no_lottery(row['車牌號碼']):
                         delete_no_application(row['車牌號碼'])
                     else:
-                        delete_payment(actual_current, row['姓名代號'])
+                        delete_payment(current, row['姓名代號'])
                     st.success('資料刪除成功')
                     upload_db(local_db_path, db_file_id)
                     st.rerun()
-
-    with button3:
-        if st.button(f'{current}免申請停車進繳費表', key="payment_table_button"):
-            try:
-                # 先从数据库中获取满足条件的 姓名代號 和 車位編號
-                conn = connect_db()
-                query = """
-                SELECT 姓名代號, 車位編號 
-                FROM 免申請 
-                WHERE 身分註記 IN ('高階主管', '值班')
-                """
-                df_high_level = pd.read_sql_query(query, conn)
-                conn.close()
-
-                # 对每一行数据执行 insert_no_application_payment 操作
-                for index, row in df_high_level.iterrows():
-                    if new_no_application_payment(current, row['姓名代號']):
-                        insert_no_application_payment(current, row['姓名代號'], row['車位編號'])
-
-                st.success(f'{current}免申請停車進繳費表成功')
-
-            finally:
-                upload_db(local_db_path, db_file_id)
-                st.rerun()
-
-    st.header("免申請停車資料新增")
-    columns = ['期別', '姓名代號', '姓名', '單位', '車牌號碼', '聯絡電話', '身分註記', '車位編號']
-    options = ["公務車", "公務車(電動)", "值班", "高階主管", "獨董", "公務保留", "孕婦", "一般(轉讓)", "專案"]
-    df8 = pd.DataFrame(columns=columns)
-    edited_df8 = st.data_editor(df8, num_rows="dynamic", column_config={
-        "身分註記": st.column_config.SelectboxColumn(
-            "身分註記",
-            options=options,
-            help="請選擇身分註記",
-            required=True
+        # 產生pdf，只保留'單位', '姓名', '車位編號'三欄
+        df7_for_pdf = df7[df7['身分註記'].isin(['一般', '一般(轉讓)'])][['單位', '姓名', '車位編號']].copy()
+        df7_for_pdf['姓名'] = df7_for_pdf['姓名'].apply(mask_name)  # 遮蔽姓名
+    
+        if st.button(f"產生{current}地下停車場員工自用車停車名冊電子檔"):
+            pdf_file = convert_custom_df_to_pdf(df7_for_pdf)
+            st.download_button(
+                label="下載電子檔",
+                data=pdf_file,
+                file_name=f"{current}地下停車場員工自用車停車名冊.pdf",
+                mime="application/pdf"
+            )
+    
+    with tab6:
+        st.header("地下停車一覽表")
+        actual_quarter = get_actual_quarter(today.month)
+        Taiwan_year = today.year - 1911
+        actual_current = f"{Taiwan_year}{actual_quarter:02}"
+    
+        options1 = ["公務車", "公務車(電動)", "值班", "高階主管", "獨董", "公務保留", "身心障礙", "孕婦", "保障", "一般", "一般(轉讓)", "專案"]
+        options2 = ["公務車", "公務車(電動)", "值班", "高階主管", "獨董", "公務保留", "身心障礙", "孕婦", "保障", "抽籤"]
+    
+        df7 = load_data7(actual_current)
+        df7['更新資訊'] = False
+        df7['刪除資訊'] = False
+    
+        name = st.text_input("請輸入要篩選的姓名", key="text_input_name_tab6")
+        if name:
+            df7['姓名'] = df7['姓名'].astype(str)  # 确保 '姓名' 列是字符串类型
+            df7 = df7[df7['姓名'].str.contains(name)]
+        filter_option = st.selectbox("篩選車位使用狀態", ["所有"] + options2, key="filter_option_tab6")
+        if filter_option != "所有":
+            df7 = df7[df7['使用狀態'] == filter_option]
+            
+        show_duplicate = st.checkbox('確認重複車位', key = 'df7-1')
+        if show_duplicate:
+            # 找出重複的車位編號
+            duplicated_values = df7[df7.duplicated(subset='車位編號', keep=False)]
+            df7 = duplicated_values
+    
+        uneditable_columns = ['姓名代號', '車牌號碼']
+        disabled_columns = [col for col in df7.columns if col in uneditable_columns]
+    
+        edited_df7 = st.data_editor(
+            df7,
+            disabled=disabled_columns,
+            column_config={
+                "身分註記": st.column_config.SelectboxColumn(
+                    "身分註記",
+                    options=options1,
+                    help="請選擇要調整的身分註記",
+                    required=True
+                ),
+                "使用狀態": st.column_config.SelectboxColumn(
+                    "使用狀態",
+                    options=options2,
+                    help="請選擇該車位用途",
+                    required=True
+                )
+            },
+            key="data_editor_df7_tab6"
         )
-    }, key="data_editor_df8")
-
-    if st.button('新增確認', key="insert_confirm_button"):
-        for index, row in edited_df8.iterrows():
-            try:
-                insert_no_application(row['期別'], row['姓名代號'], row['姓名'], row['單位'], row['車牌號碼'], row['聯絡電話'], row['身分註記'], row['車位編號'])
-                st.success("資料新增成功")
-            except Exception as e:
-                st.error(f"資料新增失敗: {e}")
-            finally:
-                upload_db(local_db_path, db_file_id)
-                st.rerun()
+    
+        button1, button2, button3 = st.columns(3)
+    
+        with button1:
+            if st.button('彙整更新確認', key="update_button_tab6"):
+                try:
+                    for index, row in edited_df7.iterrows():
+                        if row['更新資訊']:
+                            update_parking_space(row['車位編號'], row['使用狀態'], row['車位備註'])
+                            if exist_no_lottery(row['車牌號碼']):
+                                update_no_lottery(row['姓名'], row['單位'], row['聯絡電話'], row['身分註記'], row['車位編號'], row['車牌號碼'])
+                            else:
+                                update_application_record(actual_current, row['姓名'], row['單位'], row['姓名代號'], row['車牌號碼'], row['聯絡電話'])
+                                update_confirm_parking(row['車位編號'], actual_current, row['姓名代號'])
+                    st.success('資料更新成功')
+                finally:
+                    upload_db(local_db_path, db_file_id)
+                    st.rerun()
+    
+        with button2:
+            if 'delete_data_list' not in st.session_state:
+                st.session_state.delete_data_list = []
+    
+            if st.button('刪除資料確認', key="delete_button_tab6"):
+                for index, row in edited_df7.iterrows():
+                    if row['刪除資訊']:
+                        st.session_state.delete_data_list.append(row.to_dict())
+    
+            if st.session_state.delete_data_list:
+                st.write("以下是選擇刪除的項目，請確認是否要刪除資料：")
+                for i, row in enumerate(st.session_state.delete_data_list):
+                    if st.button(f"確認刪除 - {row['姓名']} ({row['車牌號碼']})", key=f"confirm_delete_button_tab6_{i}"):
+                        st.session_state.delete_data_list.pop(i)
+                        if exist_no_lottery(row['車牌號碼']):
+                            delete_no_application(row['車牌號碼'])
+                        else:
+                            delete_payment(actual_current, row['姓名代號'])
+                        st.success('資料刪除成功')
+                        upload_db(local_db_path, db_file_id)
+                        st.rerun()
+    
+        with button3:
+            if st.button(f'{current}免申請停車進繳費表', key="payment_table_button"):
+                try:
+                    # 先从数据库中获取满足条件的 姓名代號 和 車位編號
+                    conn = connect_db()
+                    query = """
+                    SELECT 姓名代號, 車位編號 
+                    FROM 免申請 
+                    WHERE 身分註記 IN ('高階主管', '值班')
+                    """
+                    df_high_level = pd.read_sql_query(query, conn)
+                    conn.close()
+    
+                    # 对每一行数据执行 insert_no_application_payment 操作
+                    for index, row in df_high_level.iterrows():
+                        if new_no_application_payment(current, row['姓名代號']):
+                            insert_no_application_payment(current, row['姓名代號'], row['車位編號'])
+    
+                    st.success(f'{current}免申請停車進繳費表成功')
+    
+                finally:
+                    upload_db(local_db_path, db_file_id)
+                    st.rerun()
+    
+        st.header("免申請停車資料新增")
+        columns = ['期別', '姓名代號', '姓名', '單位', '車牌號碼', '聯絡電話', '身分註記', '車位編號']
+        options = ["公務車", "公務車(電動)", "值班", "高階主管", "獨董", "公務保留", "孕婦", "一般(轉讓)", "專案"]
+        df8 = pd.DataFrame(columns=columns)
+        edited_df8 = st.data_editor(df8, num_rows="dynamic", column_config={
+            "身分註記": st.column_config.SelectboxColumn(
+                "身分註記",
+                options=options,
+                help="請選擇身分註記",
+                required=True
+            )
+        }, key="data_editor_df8")
+    
+        if st.button('新增確認', key="insert_confirm_button"):
+            for index, row in edited_df8.iterrows():
+                try:
+                    insert_no_application(row['期別'], row['姓名代號'], row['姓名'], row['單位'], row['車牌號碼'], row['聯絡電話'], row['身分註記'], row['車位編號'])
+                    st.success("資料新增成功")
+                except Exception as e:
+                    st.error(f"資料新增失敗: {e}")
+                finally:
+                    upload_db(local_db_path, db_file_id)
+                    st.rerun()
