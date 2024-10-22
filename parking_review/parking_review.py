@@ -803,7 +803,7 @@ with tab4:
     disabled_columns2 = [col for col in df5.columns if col not in editable_column]
 
     # 添加"是否重複車位"選項
-    show_duplicate = st.checkbox('是否重複車位')
+    show_duplicate = st.checkbox('是否重複車位', key = 'df5')
 
     if show_duplicate:
         # 找出重複的車位編號
@@ -860,11 +860,11 @@ with tab5:
         df6 = df6[df6['車位編號'].str.startswith('備取')]
 
     # 添加"是否重複車位"選項
-    show_duplicate = st.checkbox('是否重複車位')
+    show_duplicate = st.checkbox('是否重複車位', key = 'df6')
 
     if show_duplicate:
         # 找出重複的車位編號
-        duplicated_values = df5[df5.duplicated(subset='車位編號', keep=False)]
+        duplicated_values = df6[df6.duplicated(subset='車位編號', keep=False)]
         df6 = duplicated_values
 
     # 添加電子郵件列
