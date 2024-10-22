@@ -660,8 +660,10 @@ def login(username, password):
     if username == VALID_USERNAME and password == VALID_PASSWORD:
         st.session_state['logged_in'] = True
         st.success("登入成功!")
+        st.rerun()
     else:
         st.error("帳號或密碼錯誤，請再試一次。")
+        st.rerun()
 
 # 若未登入，顯示登入表單
 if not st.session_state['logged_in']:
