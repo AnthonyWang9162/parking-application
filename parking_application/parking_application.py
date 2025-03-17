@@ -169,8 +169,8 @@ def submit_application(conn, cursor, unit, name, car_number, employee_id,
 
             if status == 'none':
                 # 需上傳附件
-                insert_apply(conn, cursor, unit, name, car_number, employee_id,
-                             special_needs, contact_info, False, current, local_db_path, db_file_id)
+                #insert_apply(conn, cursor, unit, name, car_number, employee_id,
+                             #special_needs, contact_info, False, current, local_db_path, db_file_id)
                 st.error('您為第一次孕婦申請，請將相關證明文件(如 :孕婦手冊、行照、駕照)補件上傳或電郵至example@taipower.com.tw')
                 text = "您為第一次孕婦申請，請將相關證明文件(如 :孕婦手冊、行照、駕照)電郵回覆或於系統上傳。"
                 subject_text = "本期停車補證明文件通知"
