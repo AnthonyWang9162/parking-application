@@ -413,16 +413,22 @@ def get_pregnant_record_status(cursor, employee_id, last_period, before_last_per
 # Streamlit 主程式
 ########################################
 def main():
-    # 取得民國年的期別
+    # ★★★ 先初始化 Google Drive 服務與主資料夾 ID ★★★
+    creds = Credentials.from_service_account_info(st.secrets["google_drive"])
+    service = build('drive', 'v3', credentials=creds)
+    # 這裡請替換為你的「主資料夾」ID（Service Account 已有可寫入的權限）
+    drive_folder_id = "YOUR_PARENT_FOLDER_ID"
+
+    # 取得「民國年 + 期別」做為目前期別
     today = datetime.today()
     west_year, quarter = get_quarter(today.year, today.month)
     Taiwan_year = west_year - 1911
-    current = f"{Taiwan_year}{quarter:02}"
+    current = f"{Taiwan_year}{quarter:02}"  # 例如 "11402"
     previous1, previous2 = previous_quarters(Taiwan_year, quarter)
 
     st.title('停車抽籤申請表單')
 
-    # Google Drive上資料庫ID
+    # Google Drive上「資料庫檔案」的ID
     db_file_id = '1_TArAUZyzzZuLX3y320VpytfBlaoUGBB'
     local_db_path = '/tmp/test.db'
     download_db(db_file_id, local_db_path)
@@ -434,9 +440,8 @@ def main():
     if 'need_upload' not in st.session_state:
         st.session_state['need_upload'] = False
 
-    # 若不需要上傳附件，就顯示「主要表單」；否則顯示「附件上傳」
+    # ★★★（第一階段）若不需要上傳附件 => 顯示主要表單 ★★★
     if not st.session_state['need_upload']:
-        # ---- 第一階段：主要表單 ----
         with st.form(key='application_form'):
             unit = st.selectbox('(1)請問您所屬單位?', ['秘書處', '公眾服務處'])
             name = st.text_input('(2)請問您的大名?')
@@ -447,26 +452,28 @@ def main():
             special_needs = st.selectbox('(5)是否有特殊需求？', ['一般', '孕婦', '身心障礙'])
             contact_info = st.text_input('(6)您的公務聯絡方式?')
 
-            st.warning("請確認填寫資料完全無誤後，再點擊'提交'")
+            st.warning("請確認填寫資料完全無誤後，再點擊 '提交'")
             submit_button = st.form_submit_button(label='提交')
 
         if submit_button:
             with st.spinner('資料驗證中，請稍候...'):
+                # 依你的業務邏輯執行，回傳是否需補件
                 need_upload = perform_operation(
                     conn, cursor, unit, name, car_number, employee_id,
                     special_needs, contact_info, previous1, previous2,
                     current, local_db_path, db_file_id
                 )
-                # 如果需要補件 => 下一階段
+                # 如果需要補件 => 轉下一階段
                 if need_upload:
-                    # 把後續命名需要用到的資料存進session
+                    # 儲存必要資訊於 session
                     st.session_state['need_upload'] = True
                     st.session_state['unit'] = unit
                     st.session_state['name'] = name
+                    # 重新載入頁面
                     st.experimental_rerun()
 
+    # ★★★（第二階段）需要補件 => 顯示「附件上傳」區塊 ★★★
     else:
-        # ---- 第二階段：附件上傳 ----
         st.warning('請上傳相關證明文件（可一次上傳多檔）：')
         uploaded_files = st.file_uploader(
             "上傳附件檔案（可多選）", 
@@ -474,28 +481,39 @@ def main():
             accept_multiple_files=True
         )
 
-        # 為了避免跟form衝突，此處直接使用button
+        # 為了避免跟 st.form 衝突，此處直接使用普通的 st.button
         if uploaded_files:
             if st.button('確認上傳'):
+                # 1) 取得(或自動建立) 專屬「期別」的子資料夾
+                subfolder_name = current  # 期別，如 "11402"
+                subfolder_id = get_or_create_subfolder(service, drive_folder_id, subfolder_name)
+
                 for idx, uploaded_file in enumerate(uploaded_files, start=1):
-                    # 若只上傳一個檔案，就命名「unit_name.副檔名」
-                    # 若多於一個檔案，就於尾端加編號 _1, _2, ...
+                    # 若只上傳 1 檔 => 檔名: 「單位_姓名.副檔名」
+                    # 若多於 1 檔 => 檔名: 「單位_姓名_1.副檔名」等
                     file_ext = uploaded_file.name.split('.')[-1]
                     filename = f"{st.session_state['unit']}_{st.session_state['name']}"
                     if len(uploaded_files) > 1:
                         filename += f"_{idx}"
                     filename += f".{file_ext}"
 
+                    # 2) 上傳到該子資料夾
                     file_metadata = {
                         'name': filename,
-                        'parents': [drive_folder_id]
+                        'parents': [subfolder_id]  # 指向期別子資料夾
                     }
-                    media = MediaIoBaseUpload(uploaded_file, mimetype=uploaded_file.type, resumable=True)
-                    service.files().create(body=file_metadata, media_body=media, fields='id').execute()
+                    # 建議關閉 resumable=True => 改為一次性上傳: resumable=False
+                    media = MediaIoBaseUpload(uploaded_file, mimetype=uploaded_file.type, resumable=False)
 
-                st.success("所有附件已成功上傳到 Google Drive！")
+                    service.files().create(
+                        body=file_metadata,
+                        media_body=media,
+                        fields='id'
+                    ).execute()
+
+                st.success(f"所有附件已成功上傳至「{subfolder_name}」資料夾！")
                 st.balloons()
-                # 上傳完後，重置 need_upload 狀態
+                # 上傳完成後，把需補件狀態歸零
                 st.session_state['need_upload'] = False
 
     cursor.close()
