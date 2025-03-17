@@ -192,12 +192,13 @@ def submit_application(conn, cursor, unit, name, car_number, employee_id, specia
                                 media = MediaIoBaseUpload(uploaded_file, mimetype=uploaded_file.type, resumable=True)
                                 service.files().create(body=file_metadata, media_body=media, fields='id').execute()
                     
-                            st.success(f"所有附件已成功上傳到 Google Drive。")
-                    insert_apply(conn, cursor, unit, name, car_number, employee_id, special_needs, contact_info, False, current, local_db_path, db_file_id)
-                    st.error('您為第一次孕婦申請，請將相關證明文件(如 :孕婦手冊、行照、駕照)電郵至example@taipower.com.tw')
-                    text = "您為第一次孕婦申請，請將相關證明文件(如 :孕婦手冊、行照、駕照)電郵回覆。"
-                    subject_text = "本期停車補證明文件通知"
-                    send_email(employee_id, name, text, subject_text)  
+                            insert_apply(conn, cursor, unit, name, car_number, employee_id, special_needs, contact_info, False, current, local_db_path, db_file_id)
+                            st.success(f"本期停車申請成功")
+                    #insert_apply(conn, cursor, unit, name, car_number, employee_id, special_needs, contact_info, False, current, local_db_path, db_file_id)
+                    #st.error('您為第一次孕婦申請，請將相關證明文件(如 :孕婦手冊、行照、駕照)電郵至example@taipower.com.tw')
+                    #text = "您為第一次孕婦申請，請將相關證明文件(如 :孕婦手冊、行照、駕照)電郵回覆。"
+                    #subject_text = "本期停車補證明文件通知"
+                    #send_email(employee_id, name, text, subject_text)  
                 elif status == 'only_last_period':
                     if has_approved_car_record(cursor, employee_id, car_number):
                         insert_apply(conn, cursor, unit, name, car_number, employee_id, special_needs, contact_info, True, current, local_db_path, db_file_id)
