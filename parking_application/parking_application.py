@@ -19,7 +19,7 @@ creds = Credentials.from_service_account_info(st.secrets["google_drive"])
 service = build('drive', 'v3', credentials=creds)
 
 # 指定 Google Drive 資料夾ID (請自行替換)
-drive_folder_id = '你的Google_Drive資料夾ID'
+drive_folder_id = '1RlnOdNPo5hWDz-ccKCR8R-ef1Gw2B3US'
 
 lockfile_path = "/tmp/operation.lock"
 
