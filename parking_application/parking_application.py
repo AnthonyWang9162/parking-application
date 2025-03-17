@@ -167,6 +167,32 @@ def submit_application(conn, cursor, unit, name, car_number, employee_id, specia
             elif special_needs == '孕婦':
                 status = get_pregnant_record_status(cursor, employee_id, previous1, previous2)  
                 if status == 'none':
+                    # 需上傳附件資料
+                    st.error('請上傳相關證明文件（可上傳多個檔案）：')
+                    
+                    uploaded_files = st.file_uploader("上傳附件檔案（可多選）", type=['jpg', 'jpeg', 'png', 'pdf'], accept_multiple_files=True)
+                    
+                    if uploaded_files:
+                        confirm_upload = st.button('確認')
+                        if confirm_upload:
+                            drive_folder_id = '1RlnOdNPo5hWDz-ccKCR8R-ef1Gw2B3US'  # 更換為你的目標資料夾ID
+                            for idx, uploaded_file in enumerate(uploaded_files, start=1):
+                                # 處理多個檔案的命名
+                                if len(uploaded_files) == 1:
+                                    filename = f"{unit}_{name}.{uploaded_file.name.split('.')[-1]}"
+                                else:
+                                    filename = f"{unit}_{name}_{idx}.{uploaded_file.name.split('.')[-1]}"
+                    
+                                # 上傳到 Google Drive
+                                file_metadata = {
+                                    'name': filename,
+                                    'parents': [drive_folder_id]
+                                }
+                    
+                                media = MediaIoBaseUpload(uploaded_file, mimetype=uploaded_file.type, resumable=True)
+                                service.files().create(body=file_metadata, media_body=media, fields='id').execute()
+                    
+                            st.success(f"所有附件已成功上傳到 Google Drive。")
                     insert_apply(conn, cursor, unit, name, car_number, employee_id, special_needs, contact_info, False, current, local_db_path, db_file_id)
                     st.error('您為第一次孕婦申請，請將相關證明文件(如 :孕婦手冊、行照、駕照)電郵至example@taipower.com.tw')
                     text = "您為第一次孕婦申請，請將相關證明文件(如 :孕婦手冊、行照、駕照)電郵回覆。"
@@ -181,6 +207,7 @@ def submit_application(conn, cursor, unit, name, car_number, employee_id, specia
                         subject_text = "本期停車申請成功通知"
                         send_email(employee_id, name, text, subject_text)
                     else:
+                        # 需上傳附件資料
                         insert_apply(conn, cursor, unit, name, car_number, employee_id, special_needs, contact_info, False, current, local_db_path, db_file_id)
                         st.error('這輛車為第一次申請，請將相關證明文件電郵至example@taipower.com.tw')
                         text = "您有孕婦資格，但是該車為第一次申請停車，請補相關證明文件電郵回覆。"
@@ -194,6 +221,7 @@ def submit_application(conn, cursor, unit, name, car_number, employee_id, specia
                         subject_text = "本期停車申請成功通知"
                         send_email(employee_id, name, text, subject_text)
                     else:
+                        # 需上傳附件資料
                         insert_apply(conn, cursor, unit, name, car_number, employee_id, '一般', contact_info, False, current, local_db_path, db_file_id)
                         st.error('您已經過了孕婦申請期限，系統自動將您轉為一般身分申請本期停車，並且這輛車為第一次申請，請將相關證明文件電郵至example@taipower.com.tw')
                         text = "您已經過了孕婦申請期限，系統自動將您轉為一般停車申請停車抽籤，但是該車為第一次申請停車，請補相關證明文件電郵回覆。"
@@ -211,12 +239,14 @@ def submit_application(conn, cursor, unit, name, car_number, employee_id, specia
                         subject_text = "本期停車申請成功通知"
                         send_email(employee_id, name, text, subject_text)  
                     else:
+                        # 需上傳附件資料
                         insert_apply(conn, cursor, unit, name, car_number, employee_id, special_needs, contact_info, False, current, local_db_path, db_file_id)
                         st.error('這輛車為第一次申請，請將相關證明文件電郵至example@taipower.com.tw')
                         text = "您有身心障礙資格，但是該車為第一次申請停車，請補相關證明文件電郵回覆。"
                         subject_text = "本期停車補證明文件通知"
                         send_email(employee_id, name, text, subject_text)                      
                 else:
+                    # 需上傳附件資料
                     insert_apply(conn, cursor, unit, name, car_number, employee_id, special_needs, contact_info, False, current, local_db_path, db_file_id)
                     st.error('您為第一次身心障礙申請，請將相關證明文件(如 :身心障礙證明、行照、駕照)電郵至example@taipower.com.tw')
                     text = "您為第一次身心障礙申請，請將相關證明文件(如 :身心障礙證明、行照、駕照)電郵回覆。"
@@ -241,6 +271,7 @@ def submit_application(conn, cursor, unit, name, car_number, employee_id, specia
                             subject_text = "本期停車抽籤申請成功並獲得保障車位"
                             send_email(employee_id, name, text, subject_text)
                         else:
+                            # 需上傳附件資料
                             insert_apply(conn, cursor, unit, name, car_number, employee_id, '保障', contact_info, False, current, local_db_path, db_file_id)
                             st.error('本期獲得保障資格，但是此車輛為第一次申請，請將相關證明文件電郵至example@taipower.com.tw!')
                             text = "經確認您連續兩期都有申請停車，且都未中籤，本期將獲得保障車位，但是該車為第一次申請停車，請補相關證明文件電郵回覆。"
@@ -257,6 +288,7 @@ def submit_application(conn, cursor, unit, name, car_number, employee_id, specia
                                 subject_text = "本期停車抽籤申請成功並將申請身分改為孕婦通知"
                                 send_email(employee_id, name, text, subject_text)
                             else:
+                                # 需上傳附件資料
                                 insert_apply(conn, cursor, unit, name, car_number, employee_id, '孕婦', contact_info, False, current, local_db_path, db_file_id)
                                 st.error('由於您上期已通過孕婦資格申請，這期申請身分資格已改為"孕婦"，另請附車輛證明文件電郵至example@taipower.com.tw')
                                 text = "由於您上期孕婦申請成功，您的申請資格已由一般轉為孕婦身份，但是您第一次申請該車停車，請補相關證明文件電郵回覆。"
@@ -270,6 +302,7 @@ def submit_application(conn, cursor, unit, name, car_number, employee_id, specia
                                 subject_text = "本期停車抽籤申請成功通知"
                                 send_email(employee_id, name, text, subject_text)
                             else:
+                                # 需上傳附件資料
                                 insert_apply(conn, cursor, unit, name, car_number, employee_id, special_needs, contact_info, False , current,local_db_path, db_file_id)
                                 st.error('此輛車為第一次申請，請將相關證明文件寄送至example@taipower.com.tw')
                                 text = "您為第一次申請停車位，請將相關證明文件電郵回覆。"
