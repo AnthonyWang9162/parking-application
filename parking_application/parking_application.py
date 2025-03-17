@@ -111,40 +111,78 @@ def perform_operation(conn, cursor, unit, name, car_number, employee_id, special
 
 # 建立Streamlit表單
 def main():
-    # 獲取今天的日期
     today = datetime.today()
     year, quarter = get_quarter(today.year, today.month)
     Taiwan_year = year - 1911
     current = f"{Taiwan_year}{quarter:02}"
-    # 計算前兩個季度
     previous1, previous2 = previous_quarters(Taiwan_year, quarter)
+
     st.title('停車抽籤申請表單')
-    # Google Drive 文件 ID（你需要手动获取）
     db_file_id = '1_TArAUZyzzZuLX3y320VpytfBlaoUGBB'
     local_db_path = '/tmp/test.db'
-
-    # 下载数据库文件到本地
     download_db(db_file_id, local_db_path)
 
-    # 连接到本地 SQLite 数据库
     conn = sqlite3.connect(local_db_path)
     cursor = conn.cursor()
 
-    with st.form(key='application_form'):
-        unit = st.selectbox('(1)請問您所屬單位?', ['秘書處', '公眾服務處'])
-        name = st.text_input('(2)請問您的大名?')
-        car_number_prefix = st.text_input('(3-1)請問您的車牌號碼前半段("-"前)').upper()
-        car_number_suffix = st.text_input('(3-2)請問您的車牌號碼後半段("-"後)').upper()
-        car_number = car_number_prefix + car_number_suffix
-        employee_id = st.text_input('(4)請問您的員工編號?(不+U)')
-        special_needs = st.selectbox('(5)請問是否有特殊需求？', ['一般', '孕婦', '身心障礙'])
-        contact_info = st.text_input('(6)請問您的公務聯絡方式?')
-        st.warning("請確認填寫資料完全無誤後，再點擊'提交'")
-        submit_button = st.form_submit_button(label='提交')
+    if 'need_upload' not in st.session_state:
+        st.session_state['need_upload'] = False
+
+    if not st.session_state['need_upload']:
+        with st.form(key='application_form'):
+            unit = st.selectbox('(1)請問您所屬單位?', ['秘書處', '公眾服務處'])
+            name = st.text_input('(2)請問您的大名?')
+            car_number_prefix = st.text_input('(3-1)請問您的車牌號碼前半段("-"前)').upper()
+            car_number_suffix = st.text_input('(3-2)請問您的車牌號碼後半段("-"後)').upper()
+            car_number = car_number_prefix + car_number_suffix
+            employee_id = st.text_input('(4)請問您的員工編號?(不+U)')
+            special_needs = st.selectbox('(5)請問是否有特殊需求？', ['一般', '孕婦', '身心障礙'])
+            contact_info = st.text_input('(6)請問您的公務聯絡方式?')
+
+            submit_button = st.form_submit_button(label='提交')
 
         if submit_button:
             with st.spinner('資料驗證中，請稍候...'):
-                perform_operation(conn, cursor, unit, name, car_number, employee_id, special_needs, contact_info, previous1, previous2, current, local_db_path, db_file_id)
+                need_upload = perform_operation(
+                    conn, cursor, unit, name, car_number, employee_id, special_needs,
+                    contact_info, previous1, previous2, current, local_db_path, db_file_id
+                )
+                if need_upload:
+                    st.session_state['need_upload'] = True
+                    st.session_state['unit'] = unit
+                    st.session_state['name'] = name
+                    st.experimental_rerun()
+    else:
+        st.warning('您需要補交證明文件，請於下方上傳。')
+        uploaded_files = st.file_uploader(
+            "上傳附件檔案（可多選）", 
+            type=['jpg', 'jpeg', 'png', 'pdf'], 
+            accept_multiple_files=True
+        )
+
+        if uploaded_files:
+            if st.button('確認上傳'):
+                drive_folder_id = '你的Google_Drive資料夾ID'
+                for idx, uploaded_file in enumerate(uploaded_files, start=1):
+                    file_ext = uploaded_file.name.split('.')[-1]
+                    filename = f"{st.session_state['unit']}_{st.session_state['name']}"
+                    if len(uploaded_files) > 1:
+                        filename += f"_{idx}"
+                    filename += f".{file_ext}"
+
+                    file_metadata = {
+                        'name': filename,
+                        'parents': [drive_folder_id]
+                    }
+                    media = MediaIoBaseUpload(
+                        uploaded_file, mimetype=uploaded_file.type, resumable=True
+                    )
+                    service.files().create(body=file_metadata, media_body=media, fields='id').execute()
+
+                st.success("所有附件已成功上傳至Google Drive！")
+                st.session_state['need_upload'] = False
+                st.balloons()
+
     cursor.close()
     conn.close()
 
@@ -167,33 +205,7 @@ def submit_application(conn, cursor, unit, name, car_number, employee_id, specia
             elif special_needs == '孕婦':
                 status = get_pregnant_record_status(cursor, employee_id, previous1, previous2)  
                 if status == 'none':
-                    # 需上傳附件資料
-                    st.error('請上傳相關證明文件（可上傳多個檔案）：')
-                    
-                    uploaded_files = st.file_uploader("上傳附件檔案（可多選）", type=['jpg', 'jpeg', 'png', 'pdf'], accept_multiple_files=True)
-                    
-                    if uploaded_files:
-                        confirm_upload = st.button('確認')
-                        if confirm_upload:
-                            drive_folder_id = '1RlnOdNPo5hWDz-ccKCR8R-ef1Gw2B3US'  # 更換為你的目標資料夾ID
-                            for idx, uploaded_file in enumerate(uploaded_files, start=1):
-                                # 處理多個檔案的命名
-                                if len(uploaded_files) == 1:
-                                    filename = f"{unit}_{name}.{uploaded_file.name.split('.')[-1]}"
-                                else:
-                                    filename = f"{unit}_{name}_{idx}.{uploaded_file.name.split('.')[-1]}"
-                    
-                                # 上傳到 Google Drive
-                                file_metadata = {
-                                    'name': filename,
-                                    'parents': [drive_folder_id]
-                                }
-                    
-                                media = MediaIoBaseUpload(uploaded_file, mimetype=uploaded_file.type, resumable=True)
-                                service.files().create(body=file_metadata, media_body=media, fields='id').execute()
-                    
-                            insert_apply(conn, cursor, unit, name, car_number, employee_id, special_needs, contact_info, False, current, local_db_path, db_file_id)
-                            st.success(f"本期停車申請成功")
+                    return True
                     #insert_apply(conn, cursor, unit, name, car_number, employee_id, special_needs, contact_info, False, current, local_db_path, db_file_id)
                     #st.error('您為第一次孕婦申請，請將相關證明文件(如 :孕婦手冊、行照、駕照)電郵至example@taipower.com.tw')
                     #text = "您為第一次孕婦申請，請將相關證明文件(如 :孕婦手冊、行照、駕照)電郵回覆。"
