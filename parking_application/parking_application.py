@@ -207,7 +207,7 @@ def submit_application(conn, cursor, unit, name, car_number, employee_id,
         st.error('您填寫的車號欄位有誤，請調整後重新提交表單')
         return False
     if not re.match(r'^[0-9]+$', employee_id):
-        st.error('您填寫的員工編號有+U，請調整後重新提交表單')
+        st.error('您填寫的員工編號並非純數字(如:123456)，請調整後重新提交表單')
         return False
 
     # 是否本期重覆申請
