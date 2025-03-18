@@ -520,7 +520,7 @@ def main():
         with st.form(key='application_form'):
             unit = st.selectbox('(1)請問您所屬單位?', ['秘書處', '公眾服務處'])
             name = st.text_input('(2)請問您的大名?')
-            st.markdown('請將車號分成前後半段填寫(如:ABC-1234，請分別填寫前半段(ABC)及後半段(1234)')
+            st.markdown('請將車號分成前後半段填寫(如:ABC-1234，請分別填寫前半段(ABC)及後半段(1234))')
             car_number_prefix = st.text_input('(3-1)車牌前半段("-"前)').upper()
             car_number_suffix = st.text_input('(3-2)車牌後半段("-"後)').upper()
             car_number = car_number_prefix + car_number_suffix
