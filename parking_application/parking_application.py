@@ -520,8 +520,8 @@ def main():
         with st.form(key='application_form'):
             unit = st.selectbox('(1)請問您所屬單位?', ['秘書處', '公眾服務處'])
             name = st.text_input('(2)請問您的大名?')
-            
-            # 產生一個容器
+
+            # 產生一個容器 (實現自訂邊框區塊)
             with st.container() as car_block:
                 # 區塊開頭：顯示一段帶邊框的 <div>
                 car_block.markdown(
@@ -531,23 +531,26 @@ def main():
                     """,
                     unsafe_allow_html=True
                 )
-        
-                # 放入兩個 text_input 欄位（Streamlit 元件會自動接在這個 Markdown 之後）
+
+                # 放入兩個 text_input 欄位
                 car_number_prefix = car_block.text_input("(3-1) 車牌前半段（'-' 前）").upper()
                 car_number_suffix = car_block.text_input("(3-2) 車牌後半段（'-' 後）").upper()
-        
+
                 # 區塊結尾：關閉 <div>
                 car_block.markdown("</div>", unsafe_allow_html=True)
-        
+
             employee_id = st.text_input('(4)員工編號(不+U)')
             special_needs = st.selectbox('(5)是否有特殊需求？', ['一般', '孕婦', '身心障礙'])
             contact_info = st.text_input('(6)您的公務聯絡方式?')
-        
+
             st.warning("請確認填寫資料完全無誤後，再點擊'提交'")
             submit_button = st.form_submit_button(label='提交')
 
             if submit_button:
                 with st.spinner('資料驗證中，請稍候...'):
+                    # 組合 car_number
+                    car_number = car_number_prefix + car_number_suffix
+
                     need_upload = perform_operation(
                         conn, cursor, unit, name, car_number, employee_id,
                         special_needs, contact_info, previous1, previous2,
@@ -556,7 +559,6 @@ def main():
                     if need_upload:
                         # 代表需要上傳附件 => 進入第二階段
                         st.session_state['need_upload'] = True
-                        # 這裡可以存「提示訊息」給第二階段顯示
                         st.session_state['upload_prompt'] = (
                             "請上傳相關證明文件（可一次上傳多檔），再按下確認完成申請。"
                         )
@@ -570,12 +572,15 @@ def main():
 
         st.warning("請上傳相關證明文件（可一次上傳多檔）：")
         uploaded_files = st.file_uploader(
-            "上傳附件檔案（可多選）", type=['jpg', 'jpeg', 'png', 'pdf'], accept_multiple_files=True
+            "上傳附件檔案（可多選）", 
+            type=['jpg', 'jpeg', 'png', 'pdf'], 
+            accept_multiple_files=True
         )
 
         if uploaded_files:
+            # 第二階段：點擊「確認上傳」按鈕
             if st.button('確認上傳'):
-                # 1) 先把附件全部上傳到對應子資料夾
+                # 1) 把附件全部上傳到子資料夾
                 for idx, uploaded_file in enumerate(uploaded_files, start=1):
                     file_ext = uploaded_file.name.split('.')[-1]
                     filename = f"{st.session_state['pending_insert'].get('unit','')}_"
