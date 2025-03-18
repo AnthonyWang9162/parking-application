@@ -408,6 +408,36 @@ def get_pregnant_record_status(cursor, employee_id, last_period, before_last_per
         return "only_before_last_period"
     else:
         return "none"
+        
+########################################
+# 創資料夾放附件
+########################################
+def get_or_create_subfolder(service, parent_folder_id, subfolder_name):
+    """
+    在 parent_folder_id 底下檢查是否有名稱為 subfolder_name 的資料夾，
+    如果有就回傳它的 ID，否則建立新的資料夾後回傳 ID。
+    """
+    query = (
+        f"name = '{subfolder_name}' "
+        f"and '{parent_folder_id}' in parents "
+        f"and mimeType = 'application/vnd.google-apps.folder' "
+        f"and trashed=false"
+    )
+    response = service.files().list(q=query, spaces='drive', fields='files(id, name)').execute()
+    subfolders = response.get('files', [])
+
+    # 如果已經存在同名資料夾，直接回傳其ID
+    if subfolders:
+        return subfolders[0]['id']
+    else:
+        # 否則，建立一個新的資料夾
+        folder_metadata = {
+            'name': subfolder_name,
+            'mimeType': 'application/vnd.google-apps.folder',
+            'parents': [parent_folder_id]
+        }
+        folder = service.files().create(body=folder_metadata, fields='id').execute()
+        return folder['id']
 
 ########################################
 # Streamlit 主程式
@@ -420,7 +450,8 @@ def main():
     current = f"{Taiwan_year}{quarter:02}"
     previous1, previous2 = previous_quarters(Taiwan_year, quarter)
     title = f"{Taiwan_year}年第{quarter}期台灣電力股份有限公司總管理處停車位申請"
-    st.set_page_config(layout="wide",page_title=title)
+
+    st.set_page_config(layout="wide", page_title=title)
     st.title(title)
 
     # Google Drive上資料庫ID
@@ -431,11 +462,14 @@ def main():
     conn = sqlite3.connect(local_db_path)
     cursor = conn.cursor()
 
-    # 初始化 Session State
+    # 如果 session_state 裡沒有子資料夾ID，就動態取得或建立
+    if 'subfolder_id' not in st.session_state:
+        subfolder_id = get_or_create_subfolder(service, drive_folder_id, title)
+        st.session_state['subfolder_id'] = subfolder_id
+
     if 'need_upload' not in st.session_state:
         st.session_state['need_upload'] = False
 
-    # 若不需要上傳附件，就顯示「主要表單」；否則顯示「附件上傳」
     if not st.session_state['need_upload']:
         # ---- 第一階段：主要表單 ----
         with st.form(key='application_form'):
@@ -458,9 +492,7 @@ def main():
                     special_needs, contact_info, previous1, previous2,
                     current, local_db_path, db_file_id
                 )
-                # 如果需要補件 => 下一階段
                 if need_upload:
-                    # 把後續命名需要用到的資料存進session
                     st.session_state['need_upload'] = True
                     st.session_state['unit'] = unit
                     st.session_state['name'] = name
@@ -475,28 +507,31 @@ def main():
             accept_multiple_files=True
         )
 
-        # 為了避免跟form衝突，此處直接使用button
         if uploaded_files:
             if st.button('確認上傳'):
                 for idx, uploaded_file in enumerate(uploaded_files, start=1):
-                    # 若只上傳一個檔案，就命名「unit_name.副檔名」
-                    # 若多於一個檔案，就於尾端加編號 _1, _2, ...
                     file_ext = uploaded_file.name.split('.')[-1]
                     filename = f"{st.session_state['unit']}_{st.session_state['name']}"
                     if len(uploaded_files) > 1:
                         filename += f"_{idx}"
                     filename += f".{file_ext}"
 
+                    # 這裡指定子資料夾ID
                     file_metadata = {
                         'name': filename,
-                        'parents': [drive_folder_id]
+                        'parents': [st.session_state['subfolder_id']]
                     }
-                    media = MediaIoBaseUpload(uploaded_file, mimetype=uploaded_file.type, resumable=True)
-                    service.files().create(body=file_metadata, media_body=media, fields='id').execute()
+                    # 建議關閉resumable
+                    media = MediaIoBaseUpload(uploaded_file, mimetype=uploaded_file.type, resumable=False)
 
-                st.success("所有附件已成功上傳到 Google Drive！")
+                    service.files().create(
+                        body=file_metadata,
+                        media_body=media,
+                        fields='id'
+                    ).execute()
+
+                st.success("所有附件已成功上傳到 " + title + " 子資料夾！")
                 st.balloons()
-                # 上傳完後，重置 need_upload 狀態
                 st.session_state['need_upload'] = False
 
     cursor.close()
