@@ -491,7 +491,7 @@ def main():
 
     st.set_page_config(layout="wide", page_title=title)
     st.title(title)
-    st.markdown("如有申請過停車的同仁不需提供相關證明文件，如有需要系統會提示需要上傳相關證明文件，確認上傳後即完成本期停車申請。")
+    st.markdown("有申請過停車的同仁不需提供證明文件，若為第一次申請系統會提示需要上傳證明文件檔案，確認上傳後即完成本期停車申請。員工申請停車位所檢具之證明文件檔案，經秘書處審核後即刪除，並填報「個人資料刪除、銷燬紀錄表」備查，以符合個人資料保護法相關規定。")
 
     # 下載資料庫
     db_file_id = '1_TArAUZyzzZuLX3y320VpytfBlaoUGBB'
@@ -520,8 +520,9 @@ def main():
         with st.form(key='application_form'):
             unit = st.selectbox('(1)請問您所屬單位?', ['秘書處', '公眾服務處'])
             name = st.text_input('(2)請問您的大名?')
-            car_number_prefix = st.text_input('(3-1)車牌前半段').upper()
-            car_number_suffix = st.text_input('(3-2)車牌後半段').upper()
+            st.marksown('請將車號分成前後半段填寫(如:ABC-1234，請分別填寫前半段(ABC)及後半段(1234)')
+            car_number_prefix = st.text_input('(3-1)車牌前半段("-"前)').upper()
+            car_number_suffix = st.text_input('(3-2)車牌後半段("-"後)').upper()
             car_number = car_number_prefix + car_number_suffix
             employee_id = st.text_input('(4)員工編號(不+U)')
             special_needs = st.selectbox('(5)是否有特殊需求？', ['一般', '孕婦', '身心障礙'])
