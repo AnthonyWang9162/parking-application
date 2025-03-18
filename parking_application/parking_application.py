@@ -486,11 +486,12 @@ def main():
     west_year, quarter = get_quarter(today.year, today.month)
     Taiwan_year = west_year - 1911
     current = f"{Taiwan_year}{quarter:02}"
-    previous1, previous2 = previous_quarters(Taiwan_year, quarter)
+    previous1, previous2 = previous_quarters(Taiwan_year, quater)
     title = f"{Taiwan_year}年第{quarter}期台灣電力股份有限公司總管理處停車位申請"
 
     st.set_page_config(layout="wide", page_title=title)
     st.title(title)
+    st.markdown("如有申請過停車的同仁不需提供相關證明文件，如有需要系統會提示需要上傳相關證明文件，確認上傳後即完成本期停車申請。")
 
     # 下載資料庫
     db_file_id = '1_TArAUZyzzZuLX3y320VpytfBlaoUGBB'
