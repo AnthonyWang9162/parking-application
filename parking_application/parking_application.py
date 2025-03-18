@@ -452,6 +452,7 @@ def submit_application(conn, cursor, unit, name, car_number, employee_id,
                             "should_insert_parking_fee": False,
                             "email_text": "您為第一次申請一般車位，請上傳車輛證明文件。",
                             "email_subject": "本期停車補證明文件通知",
+                            "prompt": "該車為您第一次申請停車，請上傳車輛證明文件。"
                             "success_message": "本期『一般申請』已完成，感謝您補件。"
                         }
                         return True
@@ -552,65 +553,62 @@ def main():
                         st.experimental_rerun()
 
     # ============= 第二階段：上傳附件 + 真正寫入資料庫 + 寄信 =============
-    else:
-        # 若有提示訊息，就顯示
-        if st.session_state['upload_prompt']:
-            st.warning(st.session_state['upload_prompt'])
-        uploaded_files = st.file_uploader(
-            "請附上您的資料(行、駕照/其他證明文件)", 
-            type=['jpg', 'jpeg', 'png', 'pdf'], 
-            accept_multiple_files=True
-        )
+else:
+    # 第二階段：上傳附件 & 提示訊息
+    pending = st.session_state.get('pending_insert', {})
+    upload_prompt = pending.get('prompt')
+    
+    st.warning(upload_prompt)
 
-        # 這裡用普通的 st.button 就好，因為不是表單
-        if uploaded_files:
-            if st.button('確認上傳'):
-                # 1) 上傳檔案到對應子資料夾
-                for idx, uploaded_file in enumerate(uploaded_files, start=1):
-                    file_ext = uploaded_file.name.split('.')[-1]
-                    filename = f"{st.session_state['pending_insert'].get('unit','')}_"
-                    filename += f"{st.session_state['pending_insert'].get('name','')}"
+    uploaded_files = st.file_uploader(
+        "請附上您的資料(行、駕照/其他證明文件)", 
+        type=['jpg', 'jpeg', 'png', 'pdf'], 
+        accept_multiple_files=True
+    )
 
-                    if len(uploaded_files) > 1:
-                        filename += f"_{idx}"
-                    filename += f".{file_ext}"
+    if uploaded_files:
+        if st.button('確認上傳'):
+            # 上傳檔案到對應子資料夾
+            for idx, uploaded_file in enumerate(uploaded_files, start=1):
+                file_ext = uploaded_file.name.split('.')[-1]
+                filename = f"{pending.get('unit','')}_{pending.get('name','')}"
+                if len(uploaded_files) > 1:
+                    filename += f"_{idx}"
+                filename += f".{file_ext}"
 
-                    file_metadata = {
-                        'name': filename,
-                        'parents': [st.session_state['subfolder_id']]
-                    }
-                    media = MediaIoBaseUpload(uploaded_file, mimetype=uploaded_file.type, resumable=False)
-                    service.files().create(body=file_metadata, media_body=media, fields='id').execute()
+                file_metadata = {
+                    'name': filename,
+                    'parents': [st.session_state['subfolder_id']]
+                }
+                media = MediaIoBaseUpload(uploaded_file, mimetype=uploaded_file.type, resumable=False)
+                service.files().create(body=file_metadata, media_body=media, fields='id').execute()
 
-                # 2) 寫入資料庫 / 寄信
-                pending = st.session_state['pending_insert']
-                if pending:
-                    insert_apply(
-                        conn, cursor,
-                        pending['unit'], pending['name'], pending['car_number'],
-                        pending['employee_id'], pending['special_needs'],
-                        pending['contact_info'], pending['car_bind'],
-                        pending['current'], local_db_path, db_file_id
-                    )
-                    if pending['should_insert_parking_fee']:
-                        insert_parking_fee(conn, cursor, pending['current'],
-                                           pending['employee_id'],
-                                           local_db_path, db_file_id)
+            # 寫入資料庫 & 寄信
+            insert_apply(
+                conn, cursor,
+                pending['unit'], pending['name'], pending['car_number'],
+                pending['employee_id'], pending['special_needs'],
+                pending['contact_info'], pending['car_bind'],
+                pending['current'], local_db_path, db_file_id
+            )
+            if pending['should_insert_parking_fee']:
+                insert_parking_fee(conn, cursor, pending['current'],
+                                   pending['employee_id'],
+                                   local_db_path, db_file_id)
 
-                    send_email(
-                        pending['employee_id'],
-                        pending['name'],
-                        pending['email_text'],
-                        pending['email_subject']
-                    )
+            send_email(
+                pending['employee_id'],
+                pending['name'],
+                pending['email_text'],
+                pending['email_subject']
+            )
 
-                    st.success(pending['success_message'])
+            st.success(pending['success_message'])
 
-                # 3) 清理
-                st.session_state['need_upload'] = False
-                st.session_state['upload_prompt'] = ""
-                st.session_state['pending_insert'] = {}
-                st.balloons()
+            # 清理session
+            st.session_state['need_upload'] = False
+            st.session_state['pending_insert'] = {}
+            st.balloons()
 
     cursor.close()
     conn.close()
