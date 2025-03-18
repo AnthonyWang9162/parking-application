@@ -508,65 +508,59 @@ def main():
     # 狀態初始化
     if 'need_upload' not in st.session_state:
         st.session_state['need_upload'] = False
-    # 用來暫存「要插入 DB 及寄信」的資訊
     if 'pending_insert' not in st.session_state:
         st.session_state['pending_insert'] = {}
-    # 顯示在附件頁面的提醒訊息
     if 'upload_prompt' not in st.session_state:
         st.session_state['upload_prompt'] = ""
 
-    # ★★★ 第一階段：表單填寫 ★★★
+    # ============= 第一階段：填表單 =============
     if not st.session_state['need_upload']:
+        # 整個表單統一用 st.form 包住
         with st.form(key='application_form'):
             unit = st.selectbox('(1)請問您所屬單位?', ['秘書處', '公眾服務處'])
             name = st.text_input('(2)請問您的大名?')
 
-            # 產生一個容器 (實現自訂邊框區塊)
-            with st.container() as car_block:
-                # 區塊開頭：顯示一段帶邊框的 <div>
-                car_block.markdown(
-                    """
-                    <div style='border: 1px solid #CCC; padding: 15px; border-radius: 5px; margin-bottom: 1rem'>
-                      <p><strong>備註：</strong>請將車號分成前後半段填寫(如：ABC-1234，就拆成前半段 ABC，後半段 1234)</p>
-                    """,
-                    unsafe_allow_html=True
-                )
-
-                # 放入兩個 text_input 欄位
-                car_number_prefix = car_block.text_input("(3-1) 車牌前半段（'-' 前）").upper()
-                car_number_suffix = car_block.text_input("(3-2) 車牌後半段（'-' 後）").upper()
-
-                # 區塊結尾：關閉 <div>
-                car_block.markdown("</div>", unsafe_allow_html=True)
+            # 使用自訂 HTML 做帶邊框的備註區
+            st.markdown(
+                """
+                <div style='border: 1px solid #CCC; padding: 15px; border-radius: 5px; margin-bottom: 1rem'>
+                  <p><strong>備註：</strong>請將車號分成前後半段填寫(如：ABC-1234，就拆成前半段 ABC，後半段 1234)</p>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+            car_number_prefix = st.text_input("(3-1) 車牌前半段（'-' 前）").upper()
+            car_number_suffix = st.text_input("(3-2) 車牌後半段（'-' 後）").upper()
+            car_number = car_number_prefix + car_number_suffix
 
             employee_id = st.text_input('(4)員工編號(不+U)')
             special_needs = st.selectbox('(5)是否有特殊需求？', ['一般', '孕婦', '身心障礙'])
             contact_info = st.text_input('(6)您的公務聯絡方式?')
 
             st.warning("請確認填寫資料完全無誤後，再點擊'提交'")
+
+            # ★★★ 重點：表單裡要有 st.form_submit_button ★★★
             submit_button = st.form_submit_button(label='提交')
 
+            # 表單提交後的動作
             if submit_button:
                 with st.spinner('資料驗證中，請稍候...'):
-                    # 組合 car_number
-                    car_number = car_number_prefix + car_number_suffix
-
                     need_upload = perform_operation(
                         conn, cursor, unit, name, car_number, employee_id,
                         special_needs, contact_info, previous1, previous2,
                         current, local_db_path, db_file_id
                     )
                     if need_upload:
-                        # 代表需要上傳附件 => 進入第二階段
+                        # 表示需要上傳附件 => 進入第二階段
                         st.session_state['need_upload'] = True
                         st.session_state['upload_prompt'] = (
                             "請上傳相關證明文件（可一次上傳多檔），再按下確認完成申請。"
                         )
                         st.experimental_rerun()
 
-    # ★★★ 第二階段：附件上傳 + 真的插入DB & 寄信 ★★★
+    # ============= 第二階段：上傳附件 + 真正寫入資料庫 + 寄信 =============
     else:
-        # 如果有提示訊息，就先顯示
+        # 若有提示訊息，就顯示
         if st.session_state['upload_prompt']:
             st.error(st.session_state['upload_prompt'])
 
@@ -577,10 +571,10 @@ def main():
             accept_multiple_files=True
         )
 
+        # 這裡用普通的 st.button 就好，因為不是表單
         if uploaded_files:
-            # 第二階段：點擊「確認上傳」按鈕
             if st.button('確認上傳'):
-                # 1) 把附件全部上傳到子資料夾
+                # 1) 上傳檔案到對應子資料夾
                 for idx, uploaded_file in enumerate(uploaded_files, start=1):
                     file_ext = uploaded_file.name.split('.')[-1]
                     filename = f"{st.session_state['pending_insert'].get('unit','')}_"
@@ -597,7 +591,7 @@ def main():
                     media = MediaIoBaseUpload(uploaded_file, mimetype=uploaded_file.type, resumable=False)
                     service.files().create(body=file_metadata, media_body=media, fields='id').execute()
 
-                # 2) 上傳完附件後，再真正插入資料 & 寄信
+                # 2) 寫入資料庫 / 寄信
                 pending = st.session_state['pending_insert']
                 if pending:
                     insert_apply(
@@ -608,10 +602,10 @@ def main():
                         pending['current'], local_db_path, db_file_id
                     )
                     if pending['should_insert_parking_fee']:
-                        insert_parking_fee(conn, cursor, pending['current'], pending['employee_id'],
+                        insert_parking_fee(conn, cursor, pending['current'],
+                                           pending['employee_id'],
                                            local_db_path, db_file_id)
 
-                    # 寄信
                     send_email(
                         pending['employee_id'],
                         pending['name'],
@@ -619,14 +613,12 @@ def main():
                         pending['email_subject']
                     )
 
-                    # 顯示成功訊息
                     st.success(pending['success_message'])
 
-                # 3) 清理狀態
+                # 3) 清理
                 st.session_state['need_upload'] = False
                 st.session_state['upload_prompt'] = ""
                 st.session_state['pending_insert'] = {}
-
                 st.balloons()
 
     cursor.close()
