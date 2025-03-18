@@ -420,7 +420,7 @@ def main():
     current = f"{Taiwan_year}{quarter:02}"
     previous1, previous2 = previous_quarters(Taiwan_year, quarter)
     title = f"{Taiwan_year}年第{quarter}期台灣電力股份有限公司總管理處停車位申請"
-    st.set_page_config(layout="wide",page_title=title")
+    st.set_page_config(layout="wide",page_title=title)
     st.title(title)
 
     # Google Drive上資料庫ID
