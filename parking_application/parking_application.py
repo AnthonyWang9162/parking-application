@@ -519,28 +519,32 @@ def main():
         with st.form(key='application_form'):
             unit = st.selectbox('(1)請問您所屬單位?', ['秘書處', '公眾服務處'])
             name = st.text_input('(2)請問您的大名?')
-
-            # 使用自訂 HTML 做帶邊框的備註區
+        
+            # 開始帶框線區塊
             st.markdown(
                 """
                 <div style='border: 1px solid #CCC; padding: 15px; border-radius: 5px; margin-bottom: 1rem'>
-                  <p><strong>備註：</strong>請將車號分成前後半段填寫(如：ABC-1234，就拆成前半段 ABC，後半段 1234)</p>
-                </div>
+                    <p><strong>備註：</strong>請將車號分成前後半段填寫(如：ABC-1234，就拆成前半段 ABC，後半段 1234)</p>
                 """,
                 unsafe_allow_html=True
             )
+        
+            # 車牌號輸入欄位(3-1)和(3-2)，放在上面的 <div> 之後，但還沒關閉 </div>
             car_number_prefix = st.text_input("(3-1) 車牌前半段（'-' 前）").upper()
             car_number_suffix = st.text_input("(3-2) 車牌後半段（'-' 後）").upper()
-            car_number = car_number_prefix + car_number_suffix
-
+        
+            # 結束 <div>
+            st.markdown("</div>", unsafe_allow_html=True)
+        
             employee_id = st.text_input('(4)員工編號(不+U)')
             special_needs = st.selectbox('(5)是否有特殊需求？', ['一般', '孕婦', '身心障礙'])
             contact_info = st.text_input('(6)您的公務聯絡方式?')
-
+        
             st.warning("請確認填寫資料完全無誤後，再點擊'提交'")
-
-            # ★★★ 重點：表單裡要有 st.form_submit_button ★★★
+        
+            # 表單的提交按鈕
             submit_button = st.form_submit_button(label='提交')
+
 
             # 表單提交後的動作
             if submit_button:
