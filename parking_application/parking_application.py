@@ -555,11 +555,9 @@ def main():
     else:
         # 若有提示訊息，就顯示
         if st.session_state['upload_prompt']:
-            st.error(st.session_state['upload_prompt'])
-
-        st.warning("請上傳相關證明文件（可一次上傳多檔）：")
+            st.warning(st.session_state['upload_prompt'])
         uploaded_files = st.file_uploader(
-            "上傳附件檔案（可多選）", 
+            "請附上您的資料(行、駕照/其他證明文件)", 
             type=['jpg', 'jpeg', 'png', 'pdf'], 
             accept_multiple_files=True
         )
