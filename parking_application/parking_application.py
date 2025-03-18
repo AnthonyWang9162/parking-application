@@ -18,14 +18,16 @@ from googleapiclient.http import MediaIoBaseDownload, MediaFileUpload, MediaIoBa
 creds = Credentials.from_service_account_info(st.secrets["google_drive"])
 service = build('drive', 'v3', credentials=creds)
 
-# 指定 Google Drive 資料夾ID (請自行替換)
+# 指定「主資料夾」ID（Service Account 可寫入）
 drive_folder_id = '1RlnOdNPo5hWDz-ccKCR8R-ef1Gw2B3US'
 
+# 上傳/下載資料庫用的檔案鎖
 lockfile_path = "/tmp/operation.lock"
 
-########################################
-# 下載 & 上傳資料庫檔案
-########################################
+
+####################################################################
+# 資料庫讀寫函式
+####################################################################
 def download_db(file_id, destination):
     request = service.files().get_media(fileId=file_id)
     fh = io.FileIO(destination, 'wb')
@@ -39,9 +41,9 @@ def upload_db(source, file_id):
     media = MediaFileUpload(source, mimetype='application/x-sqlite3')
     service.files().update(fileId=file_id, media_body=media).execute()
 
-########################################
-# 時間/期別相關
-########################################
+####################################################################
+# 計算期別
+####################################################################
 def get_quarter(year, month):
     if 1 <= month <= 3:
         quarter = 2
@@ -71,31 +73,9 @@ def previous_quarters(year, quarter):
         previous2_year, previous2_quarter = year, 2
     return (f"{previous1_year}{previous1_quarter:02}", f"{previous2_year}{previous2_quarter:02}")
 
-########################################
-# perform_operation
-########################################
-def perform_operation(conn, cursor, unit, name, car_number, employee_id, special_needs,
-                      contact_info, previous1, previous2, current, local_db_path, db_file_id):
-    lock = FileLock(lockfile_path)
-    try:
-        lock.acquire(timeout=1)
-        time.sleep(3)
-        # submit_application若需上傳附件則返回 True，否則 False
-        need_upload = submit_application(
-            conn, cursor, unit, name, car_number, employee_id, special_needs,
-            contact_info, previous1, previous2, current, local_db_path, db_file_id
-        )
-        return need_upload
-    except TimeoutError:
-        st.warning("有操作正在進行，請稍後再試，或聯絡秘書處大樓管理組(6395)。")
-        return False
-    finally:
-        if lock.is_locked:
-            lock.release()
-
-########################################
+####################################################################
 # email 發送
-########################################
+####################################################################
 def send_email(employee_id, name, text, subject_text):
     sender_email = os.getenv("EMAIL_USER")
     sender_password = os.getenv("EMAIL_PASS")
@@ -120,231 +100,12 @@ def send_email(employee_id, name, text, subject_text):
     except Exception as e:
         return f"發送郵件時發生錯誤: {e}"
 
-########################################
-# 提交申請核心邏輯
-########################################
-def submit_application(conn, cursor, unit, name, car_number, employee_id,
-                       special_needs, contact_info, previous1, previous2,
-                       current, local_db_path, db_file_id):
-    """
-    若需要補件 => st.session_state['upload_prompt'] = "..." + return True
-    否則 return False
-    """
-    try:
-        # 基本驗證
-        if not unit or not name or not car_number or not employee_id or not special_needs or not contact_info:
-            st.error('請填寫完整表單！')
-            return False
-        elif not re.match(r'^[A-Z0-9]+$', car_number):
-            st.error('您填寫的車號欄位有誤，請調整後重新提交表單')
-            return False
-        elif not re.match(r'^[0-9]+$', employee_id):
-            st.error('您填寫的員工編號有+U，請調整後重新提交表單')
-            return False
-
-        # 是否本期重覆申請
-        cursor.execute('''
-            SELECT 1 FROM 申請紀錄 WHERE 期別 = ? AND 姓名代號 = ?
-        ''', (current, employee_id))
-        existing_record = cursor.fetchone()
-        if existing_record:
-            st.error('您已經在本期提交過申請，請勿重複提交，如需修正申請資料請聯繫秘書處大樓管理組(分機:6395)!')
-            return False
-
-        # 各種邏輯
-        if special_needs == '孕婦':
-            status = get_pregnant_record_status(cursor, employee_id, previous1, previous2)
-
-            if status == 'none':
-                # 需要補件
-                st.session_state['upload_prompt'] = (
-                    "您為第一次孕婦申請，請將相關證明文件(如：孕婦手冊、行照、駕照)補件上傳或電郵至example@taipower.com.tw"
-                )
-                text = "您為第一次孕婦申請，請將相關證明文件(如：孕婦手冊、行照、駕照)電郵回覆或於系統上傳。"
-                subject_text = "本期停車補證明文件通知"
-                send_email(employee_id, name, text, subject_text)
-                return True
-
-            elif status == 'only_last_period':
-                if has_approved_car_record(cursor, employee_id, car_number):
-                    # 已有車牌紀錄 => 直接成功
-                    insert_apply(conn, cursor, unit, name, car_number, employee_id,
-                                 special_needs, contact_info, True, current, local_db_path, db_file_id)
-                    insert_parking_fee(conn, cursor, current, employee_id, local_db_path, db_file_id)
-                    st.success('本期"孕婦"身分停車申請成功')
-                    text = "您有孕婦資格，本期停車申請成功，感謝您。"
-                    subject_text = "本期停車申請成功通知"
-                    send_email(employee_id, name, text, subject_text)
-                    return False
-                else:
-                    # 需要補件
-                    insert_apply(conn, cursor, unit, name, car_number, employee_id,
-                                 special_needs, contact_info, False, current, local_db_path, db_file_id)
-                    st.session_state['upload_prompt'] = (
-                        "您有孕婦資格，但該車為第一次申請停車，請補相關證明文件上傳或電郵至example@taipower.com.tw"
-                    )
-                    text = "您有孕婦資格，但是該車為第一次申請停車，請補相關證明文件。"
-                    subject_text = "本期停車補證明文件通知"
-                    send_email(employee_id, name, text, subject_text)
-                    return True
-
-            else:
-                # 已超過孕婦期限 => 轉一般
-                if has_approved_car_record(cursor, employee_id, car_number):
-                    insert_apply(conn, cursor, unit, name, car_number, employee_id,
-                                 '一般', contact_info, True, current, local_db_path, db_file_id)
-                    st.success('您已經過了孕婦申請期限，系統自動將您轉為一般身分申請本期停車成功。')
-                    text = "您已經過了孕婦申請期限，系統自動將您轉為一般停車申請，感謝您。"
-                    subject_text = "本期停車申請成功通知"
-                    send_email(employee_id, name, text, subject_text)
-                    return False
-                else:
-                    # 需要補件
-                    insert_apply(conn, cursor, unit, name, car_number, employee_id,
-                                 '一般', contact_info, False, current, local_db_path, db_file_id)
-                    st.session_state['upload_prompt'] = (
-                        "您已過孕婦申請期限並自動轉為一般身分，且此車為第一次申請。請補相關證明文件上傳或電郵。"
-                    )
-                    text = "您已經過了孕婦申請期限，但該車為第一次申請停車，請補相關證明文件。"
-                    subject_text = "本期停車補證明文件通知"
-                    send_email(employee_id, name, text, subject_text)
-                    return True
-
-        elif special_needs == '身心障礙':
-            cursor.execute(
-                "SELECT * FROM 申請紀錄 WHERE 姓名代號 = ? AND 身分註記 = ?",
-                (employee_id, '身心障礙')
-            )
-            disable_data = cursor.fetchone()
-            if disable_data:
-                if has_approved_car_record(cursor, employee_id, car_number):
-                    insert_apply(conn, cursor, unit, name, car_number, employee_id,
-                                 special_needs, contact_info, True, current, local_db_path, db_file_id)
-                    insert_parking_fee(conn, cursor, current, employee_id, local_db_path, db_file_id)
-                    st.success('本期"身心障礙"身分停車申請成功')
-                    text = "您有身心障礙資格，本期停車申請成功，感謝您。"
-                    subject_text = "本期停車申請成功通知"
-                    send_email(employee_id, name, text, subject_text)
-                    return False
-                else:
-                    # 需要補件
-                    insert_apply(conn, cursor, unit, name, car_number, employee_id,
-                                 special_needs, contact_info, False, current, local_db_path, db_file_id)
-                    st.session_state['upload_prompt'] = (
-                        "您有身心障礙資格，但此車為第一次申請停車，請補相關證明文件上傳或電郵。"
-                    )
-                    text = "您有身心障礙資格，但是該車為第一次申請停車，請補相關證明文件。"
-                    subject_text = "本期停車補證明文件通知"
-                    send_email(employee_id, name, text, subject_text)
-                    return True
-            else:
-                # 需要補件
-                insert_apply(conn, cursor, unit, name, car_number, employee_id,
-                             special_needs, contact_info, False, current, local_db_path, db_file_id)
-                st.session_state['upload_prompt'] = (
-                    "您為第一次身心障礙申請，請將身心障礙證明、行照、駕照等文件上傳或電郵!"
-                )
-                text = "您為第一次身心障礙申請，請將相關證明文件補件上傳或電郵。"
-                subject_text = "本期停車補證明文件通知"
-                send_email(employee_id, name, text, subject_text)
-                return True
-
-        else:
-            # 一般
-            cursor.execute("""
-                SELECT * FROM 抽籤繳費
-                WHERE 姓名代號 = ? AND 期別 = ? AND (繳費狀態 = '已繳費' OR 繳費狀態 = '轉讓')
-            """, (employee_id, previous1))
-            existing_data = cursor.fetchone()
-
-            cursor.execute("""
-                SELECT * FROM 申請紀錄
-                WHERE 姓名代號 = ? AND 身分註記 in (?,?) AND 期別 = ?
-            """, (employee_id, '一般', '保障', previous1))
-            existing_application_data = cursor.fetchone()
-
-            # 若上一期已確定停車 -> 不得申請
-            if existing_data and existing_application_data:
-                st.error('您上期已確認停車，請您下期再來申請停車位!')
-                return False
-            else:
-                # 檢查是否連兩期都未抽中 => 保障
-                if check_user_eligibility(employee_id, conn, cursor, previous1, previous2):
-                    if has_approved_car_record(cursor, employee_id, car_number):
-                        insert_apply(conn, cursor, unit, name, car_number, employee_id,
-                                     '保障', contact_info, True, current, local_db_path, db_file_id)
-                        insert_parking_fee(conn, cursor, current, employee_id, local_db_path, db_file_id)
-                        st.success('由於您前兩期申請停車都未抽籤，本期獲得保障資格!')
-                        text = "您連續兩期都有申請且都未中籤，本期獲得保障車位。"
-                        subject_text = "本期停車抽籤申請成功並獲得保障車位"
-                        send_email(employee_id, name, text, subject_text)
-                        return False
-                    else:
-                        # 需要補件
-                        insert_apply(conn, cursor, unit, name, car_number, employee_id,
-                                     '保障', contact_info, False, current, local_db_path, db_file_id)
-                        st.session_state['upload_prompt'] = (
-                            "您前兩期都未中籤，本期獲得保障資格，但此車為第一次申請，請補相關證明文件上傳或電郵。"
-                        )
-                        text = "您連續兩期都有申請且都未中籤；本期獲得保障車位，但該車為第一次申請。請補證明文件。"
-                        subject_text = "本期停車抽籤申請補證明文件通知"
-                        send_email(employee_id, name, text, subject_text)
-                        return True
-                else:
-                    # 檢查是否上期曾是孕婦
-                    status = get_pregnant_record_status(cursor, employee_id, previous1, previous2)
-                    if status == 'only_last_period':
-                        if has_approved_car_record(cursor, employee_id, car_number):
-                            insert_apply(conn, cursor, unit, name, car_number, employee_id,
-                                         '孕婦', contact_info, True, current, local_db_path, db_file_id)
-                            insert_parking_fee(conn, cursor, current, employee_id, local_db_path, db_file_id)
-                            st.success('由於您上期申請孕婦資格成功，本期將自動替換為孕婦身分申請!')
-                            text = "您上期孕婦申請成功，本期自動帶入孕婦身份，獲得保障車位。"
-                            subject_text = "本期停車抽籤申請成功並改為孕婦身份"
-                            send_email(employee_id, name, text, subject_text)
-                            return False
-                        else:
-                            # 需要補件
-                            insert_apply(conn, cursor, unit, name, car_number, employee_id,
-                                         '孕婦', contact_info, False, current, local_db_path, db_file_id)
-                            st.session_state['upload_prompt'] = (
-                                "您上期孕婦申請成功，但此車為第一次申請停車，請補件上傳或電郵。"
-                            )
-                            text = "您上期孕婦申請成功，但該車為第一次申請，請補證明文件。"
-                            subject_text = "本期停車抽籤申請補證明文件通知"
-                            send_email(employee_id, name, text, subject_text)
-                            return True
-                    else:
-                        # 一般申請
-                        if has_approved_car_record(cursor, employee_id, car_number):
-                            insert_apply(conn, cursor, unit, name, car_number, employee_id,
-                                         special_needs, contact_info, True, current, local_db_path, db_file_id)
-                            st.success('本期一般車位申請成功!')
-                            text = "本期您一般身分停車抽籤申請成功，感謝您。"
-                            subject_text = "本期停車抽籤申請成功通知"
-                            send_email(employee_id, name, text, subject_text)
-                            return False
-                        else:
-                            # 需要補件
-                            insert_apply(conn, cursor, unit, name, car_number, employee_id,
-                                         special_needs, contact_info, False, current, local_db_path, db_file_id)
-                            st.session_state['upload_prompt'] = (
-                                "此輛車為第一次申請，請補相關證明文件上傳或電郵!"
-                            )
-                            text = "您為第一次申請停車位，請將相關證明文件補件上傳或電郵。"
-                            subject_text = "本期停車抽籤申請補證明文件通知"
-                            send_email(employee_id, name, text, subject_text)
-                            return True
-
-    except:
-        st.warning("有操作正在進行，請稍後再試，或聯絡秘書處大樓管理組(6395)。")
-        return False
-
-########################################
-# 寫入資料庫：申請紀錄
-########################################
-def insert_apply(conn, cursor, unit, name, car_number, employee_id, special_needs,
-                 contact_info, car_bind, current, local_db_path, db_file_id):
+####################################################################
+# 資料庫操作：插入申請紀錄 & 繳費紀錄
+####################################################################
+def insert_apply(conn, cursor, unit, name, car_number, employee_id,
+                 special_needs, contact_info, car_bind, current,
+                 local_db_path, db_file_id):
     current_date = datetime.now().strftime('%Y-%m-%d')
     cursor.execute('''
     INSERT INTO 申請紀錄 (日期,期別,姓名代號,姓名,單位,車牌號碼,聯絡電話,身分註記,車牌綁定)
@@ -354,10 +115,20 @@ def insert_apply(conn, cursor, unit, name, car_number, employee_id, special_need
     conn.commit()
     upload_db(local_db_path, db_file_id)
 
-########################################
-# 判斷是否連續兩期未中籤
-########################################
+def insert_parking_fee(conn, cursor, current, employee_id, local_db_path, db_file_id):
+    insert_query = """
+    INSERT INTO 抽籤繳費 (期別,姓名代號,繳費狀態)
+    VALUES (?,?,'未繳費')
+    """
+    cursor.execute(insert_query, (current, employee_id))
+    conn.commit()
+    upload_db(local_db_path, db_file_id)
+
+####################################################################
+# 資料庫邏輯判斷
+####################################################################
 def check_user_eligibility(employee_id, conn, cursor, previous1, previous2):
+    # 判斷是否連兩期 '未繳費' => 未抽中
     cursor.execute('''
         SELECT COUNT(*)
         FROM 抽籤繳費
@@ -374,28 +145,10 @@ def check_user_eligibility(employee_id, conn, cursor, previous1, previous2):
 
     return unpaid_before_last_period > 0 and unpaid_last_period > 0
 
-########################################
-# 判斷該車號是否已核備
-########################################
 def has_approved_car_record(cursor, employee_id, car_number):
     cursor.execute("SELECT * FROM 使用者車牌 WHERE 姓名代號 = ? AND 車牌號碼 = ?", (employee_id, car_number))
     return cursor.fetchone() is not None
 
-########################################
-# 寫入資料庫：抽籤繳費
-########################################
-def insert_parking_fee(conn, cursor, current, employee_id, local_db_path, db_file_id):
-    insert_query = """
-    INSERT INTO 抽籤繳費 (期別,姓名代號,繳費狀態)
-    VALUES (?,?,'未繳費')
-    """
-    cursor.execute(insert_query, (current, employee_id))
-    conn.commit()
-    upload_db(local_db_path, db_file_id)
-
-########################################
-# 判斷上期/前期是否為孕婦
-########################################
 def get_pregnant_record_status(cursor, employee_id, last_period, before_last_period):
     cursor.execute('''
         SELECT 期別 FROM 申請紀錄
@@ -403,7 +156,6 @@ def get_pregnant_record_status(cursor, employee_id, last_period, before_last_per
     ''', (employee_id, last_period, before_last_period, '孕婦'))
     records = cursor.fetchall()
     periods = [record[0] for record in records]
-
     if last_period in periods and before_last_period in periods:
         return "both"
     elif last_period in periods:
@@ -413,9 +165,9 @@ def get_pregnant_record_status(cursor, employee_id, last_period, before_last_per
     else:
         return "none"
 
-########################################
-# 創資料夾放附件
-########################################
+####################################################################
+# 補件時的檔案上傳資料夾管理
+####################################################################
 def get_or_create_subfolder(service, parent_folder_id, subfolder_name):
     query = (
         f"name = '{subfolder_name}' "
@@ -436,11 +188,300 @@ def get_or_create_subfolder(service, parent_folder_id, subfolder_name):
         folder = service.files().create(body=folder_metadata, fields='id').execute()
         return folder['id']
 
-########################################
+####################################################################
+# 主邏輯：表單送出 => 判斷 => 若需補件 => 暫存; 若不需補件 => 直接插DB & 寄信
+####################################################################
+def submit_application(conn, cursor, unit, name, car_number, employee_id,
+                       special_needs, contact_info, previous1, previous2,
+                       current, local_db_path, db_file_id):
+    """
+    1) 若不需要上傳附件 => 直接在這裡插入資料庫 / 寄信 / 回傳 False
+    2) 若需要上傳附件 => 不做插入或寄信，只在 st.session_state['pending_insert'] 裝載所有資訊
+       並回傳 True => 讓主程式進入附件上傳頁面
+    """
+    # 基本驗證
+    if not unit or not name or not car_number or not employee_id or not special_needs or not contact_info:
+        st.error('請填寫完整表單！')
+        return False
+    if not re.match(r'^[A-Z0-9]+$', car_number):
+        st.error('您填寫的車號欄位有誤，請調整後重新提交表單')
+        return False
+    if not re.match(r'^[0-9]+$', employee_id):
+        st.error('您填寫的員工編號有+U，請調整後重新提交表單')
+        return False
+
+    # 是否本期重覆申請
+    cursor.execute('SELECT 1 FROM 申請紀錄 WHERE 期別 = ? AND 姓名代號 = ?', (current, employee_id))
+    existing_record = cursor.fetchone()
+    if existing_record:
+        st.error('您已經在本期提交過申請，請勿重複提交，如需修正請聯繫管理組(6395)!')
+        return False
+
+    # 根據邏輯判斷
+    if special_needs == '孕婦':
+        status = get_pregnant_record_status(cursor, employee_id, previous1, previous2)
+
+        if status == 'none':
+            # ---- 需要補件，但「尚未」插DB或寄信 ----
+            st.session_state['pending_insert'] = {
+                "unit": unit,
+                "name": name,
+                "car_number": car_number,
+                "employee_id": employee_id,
+                "special_needs": special_needs,  # '孕婦'
+                "contact_info": contact_info,
+                "car_bind": False,      # 第一次申請 => False
+                "current": current,
+                "should_insert_parking_fee": False,   # 還未給予車位
+                "email_text": "您為第一次孕婦申請，請上傳孕婦手冊、行照、駕照等證明文件。",
+                "email_subject": "本期停車補證明文件通知",
+                "success_message": "本期『孕婦申請』已完成，感謝您補件。"  
+            }
+            return True
+
+        elif status == 'only_last_period':
+            if has_approved_car_record(cursor, employee_id, car_number):
+                # 直接插DB & 寄信
+                insert_apply(conn, cursor, unit, name, car_number, employee_id,
+                             special_needs, contact_info, True, current, local_db_path, db_file_id)
+                insert_parking_fee(conn, cursor, current, employee_id, local_db_path, db_file_id)
+                st.success('本期"孕婦"身分停車申請成功')
+                text = "您有孕婦資格，本期停車申請成功，感謝您。"
+                subject_text = "本期停車申請成功通知"
+                send_email(employee_id, name, text, subject_text)
+                return False
+            else:
+                # 需要補件 => 暫存
+                st.session_state['pending_insert'] = {
+                    "unit": unit,
+                    "name": name,
+                    "car_number": car_number,
+                    "employee_id": employee_id,
+                    "special_needs": special_needs,  # '孕婦'
+                    "contact_info": contact_info,
+                    "car_bind": False,
+                    "current": current,
+                    "should_insert_parking_fee": True, 
+                    "email_text": "您有孕婦資格，但此車為第一次申請，請上傳孕婦資格證明文件及車輛文件。",
+                    "email_subject": "本期停車補證明文件通知",
+                    "success_message": "本期『孕婦申請』已完成，感謝您補件。系統已為您預留孕婦車位。"
+                }
+                return True
+
+        else:
+            # 已過孕婦資格 => 轉一般
+            if has_approved_car_record(cursor, employee_id, car_number):
+                # 無需補件
+                insert_apply(conn, cursor, unit, name, car_number, employee_id,
+                             '一般', contact_info, True, current, local_db_path, db_file_id)
+                st.success('您已過孕婦申請期，系統自動改為一般申請成功。')
+                text = "您已過孕婦申請期，系統自動將您轉為一般申請，感謝您。"
+                subject_text = "本期停車申請成功通知"
+                send_email(employee_id, name, text, subject_text)
+                return False
+            else:
+                # 需要補件 => 暫存
+                st.session_state['pending_insert'] = {
+                    "unit": unit,
+                    "name": name,
+                    "car_number": car_number,
+                    "employee_id": employee_id,
+                    "special_needs": '一般',
+                    "contact_info": contact_info,
+                    "car_bind": False,
+                    "current": current,
+                    "should_insert_parking_fee": False, 
+                    "email_text": "您已過孕婦申請期，但此車為第一次申請一般停車，請上傳車輛證明文件。",
+                    "email_subject": "本期停車補證明文件通知",
+                    "success_message": "本期『一般申請』已完成，感謝您補件。"
+                }
+                return True
+
+    elif special_needs == '身心障礙':
+        # 看之前是否有身障紀錄
+        cursor.execute("SELECT * FROM 申請紀錄 WHERE 姓名代號=? AND 身分註記='身心障礙'", (employee_id,))
+        disable_data = cursor.fetchone()
+        if disable_data:
+            if has_approved_car_record(cursor, employee_id, car_number):
+                insert_apply(conn, cursor, unit, name, car_number, employee_id,
+                             special_needs, contact_info, True, current, local_db_path, db_file_id)
+                insert_parking_fee(conn, cursor, current, employee_id, local_db_path, db_file_id)
+                st.success('本期"身心障礙"停車申請成功')
+                text = "您有身心障礙資格，本期停車申請成功。"
+                subject_text = "本期停車申請成功通知"
+                send_email(employee_id, name, text, subject_text)
+                return False
+            else:
+                # 需要補件 => 暫存
+                st.session_state['pending_insert'] = {
+                    "unit": unit,
+                    "name": name,
+                    "car_number": car_number,
+                    "employee_id": employee_id,
+                    "special_needs": special_needs,  # '身心障礙'
+                    "contact_info": contact_info,
+                    "car_bind": False,
+                    "current": current,
+                    "should_insert_parking_fee": True,
+                    "email_text": "您有身心障礙資格，但此車為第一次申請，請上傳身障證明與車輛證明文件。",
+                    "email_subject": "本期停車補證明文件通知",
+                    "success_message": "本期『身心障礙』已完成，感謝您補件。系統已為您預留身障車位。"
+                }
+                return True
+        else:
+            # 第一次身障申請 => 需補件
+            st.session_state['pending_insert'] = {
+                "unit": unit,
+                "name": name,
+                "car_number": car_number,
+                "employee_id": employee_id,
+                "special_needs": special_needs,  # '身心障礙'
+                "contact_info": contact_info,
+                "car_bind": False,
+                "current": current,
+                "should_insert_parking_fee": False,
+                "email_text": "您為第一次身心障礙申請，請上傳身障證明、行照、駕照等文件。",
+                "email_subject": "本期停車補證明文件通知",
+                "success_message": "本期『身心障礙申請』已完成，感謝您補件。"
+            }
+            return True
+
+    else:
+        # 一般
+        cursor.execute("""
+            SELECT * FROM 抽籤繳費
+            WHERE 姓名代號 = ?
+              AND 期別 = ?
+              AND (繳費狀態 = '已繳費' OR 繳費狀態 = '轉讓')
+        """, (employee_id, previous1))
+        existing_data = cursor.fetchone()
+
+        cursor.execute("""
+            SELECT * FROM 申請紀錄
+            WHERE 姓名代號 = ?
+              AND 身分註記 in (?,?)
+              AND 期別 = ?
+        """, (employee_id, '一般', '保障', previous1))
+        existing_application_data = cursor.fetchone()
+
+        # 上期已確定停車 => 不得申請
+        if existing_data and existing_application_data:
+            st.error('您上期已確認停車，請下期再申請停車位!')
+            return False
+        else:
+            # 是否連兩期都未抽中 => 保障
+            if check_user_eligibility(employee_id, conn, cursor, previous1, previous2):
+                if has_approved_car_record(cursor, employee_id, car_number):
+                    insert_apply(conn, cursor, unit, name, car_number, employee_id,
+                                 '保障', contact_info, True, current, local_db_path, db_file_id)
+                    insert_parking_fee(conn, cursor, current, employee_id, local_db_path, db_file_id)
+                    st.success('您前兩期都未抽中，本期獲得保障車位!')
+                    text = "您連續兩期都有申請，且都未中籤，本期獲得保障車位。"
+                    subject_text = "本期停車申請成功並獲得保障車位"
+                    send_email(employee_id, name, text, subject_text)
+                    return False
+                else:
+                    # 需要補件 => 暫存
+                    st.session_state['pending_insert'] = {
+                        "unit": unit,
+                        "name": name,
+                        "car_number": car_number,
+                        "employee_id": employee_id,
+                        "special_needs": '保障',
+                        "contact_info": contact_info,
+                        "car_bind": False,
+                        "current": current,
+                        "should_insert_parking_fee": True,
+                        "email_text": "您前兩期都未中籤，本期享保障車位，但此車為第一次申請。請上傳車輛證明文件。",
+                        "email_subject": "本期停車補證明文件通知",
+                        "success_message": "本期『保障車位申請』已完成，感謝您補件。系統已為您預留保障車位。"
+                    }
+                    return True
+            else:
+                # 檢查是否上期曾是孕婦 => 可能自動帶入孕婦
+                status = get_pregnant_record_status(cursor, employee_id, previous1, previous2)
+                if status == 'only_last_period':
+                    if has_approved_car_record(cursor, employee_id, car_number):
+                        insert_apply(conn, cursor, unit, name, car_number, employee_id,
+                                     '孕婦', contact_info, True, current, local_db_path, db_file_id)
+                        insert_parking_fee(conn, cursor, current, employee_id, local_db_path, db_file_id)
+                        st.success('您上期孕婦申請成功，本期自動帶入孕婦車位!')
+                        text = "您上期孕婦申請成功，本期自動帶入孕婦身份，獲得保障。"
+                        subject_text = "本期停車申請成功並改為孕婦身份"
+                        send_email(employee_id, name, text, subject_text)
+                        return False
+                    else:
+                        # 需要補件 => 暫存
+                        st.session_state['pending_insert'] = {
+                            "unit": unit,
+                            "name": name,
+                            "car_number": car_number,
+                            "employee_id": employee_id,
+                            "special_needs": '孕婦',
+                            "contact_info": contact_info,
+                            "car_bind": False,
+                            "current": current,
+                            "should_insert_parking_fee": True,
+                            "email_text": "您上期孕婦申請成功，但此車為第一次申請，請上傳孕婦/車輛證明文件。",
+                            "email_subject": "本期停車補證明文件通知",
+                            "success_message": "本期『孕婦申請』已完成，感謝您補件。"
+                        }
+                        return True
+                else:
+                    # 純一般申請
+                    if has_approved_car_record(cursor, employee_id, car_number):
+                        # 直接成功
+                        insert_apply(conn, cursor, unit, name, car_number, employee_id,
+                                     special_needs, contact_info, True, current, local_db_path, db_file_id)
+                        st.success('本期一般車位申請成功!')
+                        text = "本期您一般身分停車抽籤申請成功，感謝您。"
+                        subject_text = "本期停車抽籤申請成功通知"
+                        send_email(employee_id, name, text, subject_text)
+                        return False
+                    else:
+                        # 需要補件 => 暫存
+                        st.session_state['pending_insert'] = {
+                            "unit": unit,
+                            "name": name,
+                            "car_number": car_number,
+                            "employee_id": employee_id,
+                            "special_needs": special_needs,
+                            "contact_info": contact_info,
+                            "car_bind": False,
+                            "current": current,
+                            "should_insert_parking_fee": False,
+                            "email_text": "您為第一次申請一般車位，請上傳車輛證明文件。",
+                            "email_subject": "本期停車補證明文件通知",
+                            "success_message": "本期『一般申請』已完成，感謝您補件。"
+                        }
+                        return True
+
+####################################################################
+# 執行主要邏輯：加檔案鎖 & 呼叫 submit_application
+####################################################################
+def perform_operation(conn, cursor, unit, name, car_number, employee_id, special_needs,
+                      contact_info, previous1, previous2, current, local_db_path, db_file_id):
+    lock = FileLock(lockfile_path)
+    try:
+        lock.acquire(timeout=1)
+        time.sleep(3)
+        need_upload = submit_application(
+            conn, cursor, unit, name, car_number, employee_id, special_needs,
+            contact_info, previous1, previous2, current, local_db_path, db_file_id
+        )
+        return need_upload
+    except TimeoutError:
+        st.warning("有操作正在進行，請稍後再試，或聯絡管理組(6395)。")
+        return False
+    finally:
+        if lock.is_locked:
+            lock.release()
+
+####################################################################
 # Streamlit 主程式
-########################################
+####################################################################
 def main():
-    # 取得民國年的期別
+    # 取得民國年期別
     today = datetime.today()
     west_year, quarter = get_quarter(today.year, today.month)
     Taiwan_year = west_year - 1911
@@ -451,7 +492,7 @@ def main():
     st.set_page_config(layout="wide", page_title=title)
     st.title(title)
 
-    # Google Drive上資料庫ID
+    # 下載資料庫
     db_file_id = '1_TArAUZyzzZuLX3y320VpytfBlaoUGBB'
     local_db_path = '/tmp/test.db'
     download_db(db_file_id, local_db_path)
@@ -459,18 +500,21 @@ def main():
     conn = sqlite3.connect(local_db_path)
     cursor = conn.cursor()
 
-    # 如果 session_state 裡沒有子資料夾ID，就動態取得或建立
+    # 若 session_state 裡沒子資料夾ID => 自動建立/取得
     if 'subfolder_id' not in st.session_state:
-        subfolder_id = get_or_create_subfolder(service, drive_folder_id, title)
-        st.session_state['subfolder_id'] = subfolder_id
+        st.session_state['subfolder_id'] = get_or_create_subfolder(service, drive_folder_id, title)
 
-    # 初始化 need_upload / upload_prompt
+    # 狀態初始化
     if 'need_upload' not in st.session_state:
         st.session_state['need_upload'] = False
+    # 用來暫存「要插入 DB 及寄信」的資訊
+    if 'pending_insert' not in st.session_state:
+        st.session_state['pending_insert'] = {}
+    # 顯示在附件頁面的提醒訊息
     if 'upload_prompt' not in st.session_state:
         st.session_state['upload_prompt'] = ""
 
-    # 第一階段：主要表單
+    # ★★★ 第一階段：表單填寫 ★★★
     if not st.session_state['need_upload']:
         with st.form(key='application_form'):
             unit = st.selectbox('(1)請問您所屬單位?', ['秘書處', '公眾服務處'])
@@ -493,29 +537,33 @@ def main():
                     current, local_db_path, db_file_id
                 )
                 if need_upload:
+                    # 代表需要上傳附件 => 進入第二階段
                     st.session_state['need_upload'] = True
-                    st.session_state['unit'] = unit
-                    st.session_state['name'] = name
+                    # 這裡可以存「提示訊息」給第二階段顯示
+                    st.session_state['upload_prompt'] = (
+                        "請上傳相關證明文件（可一次上傳多檔），再按下確認完成申請。"
+                    )
                     st.experimental_rerun()
 
-    # 第二階段：附件上傳
+    # ★★★ 第二階段：附件上傳 + 真的插入DB & 寄信 ★★★
     else:
-        # ★ 在附件上傳頁面最上方顯示之前的補件訊息
+        # 如果有提示訊息，就先顯示
         if st.session_state['upload_prompt']:
             st.error(st.session_state['upload_prompt'])
 
-        st.warning('請上傳相關證明文件（可一次上傳多檔）：')
+        st.warning("請上傳相關證明文件（可一次上傳多檔）：")
         uploaded_files = st.file_uploader(
-            "上傳附件檔案（可多選）", 
-            type=['jpg', 'jpeg', 'png', 'pdf'], 
-            accept_multiple_files=True
+            "上傳附件檔案（可多選）", type=['jpg', 'jpeg', 'png', 'pdf'], accept_multiple_files=True
         )
 
         if uploaded_files:
             if st.button('確認上傳'):
+                # 1) 先把附件全部上傳到對應子資料夾
                 for idx, uploaded_file in enumerate(uploaded_files, start=1):
                     file_ext = uploaded_file.name.split('.')[-1]
-                    filename = f"{st.session_state['unit']}_{st.session_state['name']}"
+                    filename = f"{st.session_state['pending_insert'].get('unit','')}_"
+                    filename += f"{st.session_state['pending_insert'].get('name','')}"
+
                     if len(uploaded_files) > 1:
                         filename += f"_{idx}"
                     filename += f".{file_ext}"
@@ -525,23 +573,45 @@ def main():
                         'parents': [st.session_state['subfolder_id']]
                     }
                     media = MediaIoBaseUpload(uploaded_file, mimetype=uploaded_file.type, resumable=False)
-                    service.files().create(
-                        body=file_metadata,
-                        media_body=media,
-                        fields='id'
-                    ).execute()
+                    service.files().create(body=file_metadata, media_body=media, fields='id').execute()
 
-                st.success("所有附件已成功上傳到 " + title + " 子資料夾！")
-                st.balloons()
+                # 2) 上傳完附件後，再真正插入資料 & 寄信
+                pending = st.session_state['pending_insert']
+                if pending:
+                    insert_apply(
+                        conn, cursor,
+                        pending['unit'], pending['name'], pending['car_number'],
+                        pending['employee_id'], pending['special_needs'],
+                        pending['contact_info'], pending['car_bind'],
+                        pending['current'], local_db_path, db_file_id
+                    )
+                    if pending['should_insert_parking_fee']:
+                        insert_parking_fee(conn, cursor, pending['current'], pending['employee_id'],
+                                           local_db_path, db_file_id)
 
-                # 上傳完後，重置狀態並清除提示
+                    # 寄信
+                    send_email(
+                        pending['employee_id'],
+                        pending['name'],
+                        pending['email_text'],
+                        pending['email_subject']
+                    )
+
+                    # 顯示成功訊息
+                    st.success(pending['success_message'])
+
+                # 3) 清理狀態
                 st.session_state['need_upload'] = False
                 st.session_state['upload_prompt'] = ""
+                st.session_state['pending_insert'] = {}
+
+                st.balloons()
 
     cursor.close()
     conn.close()
 
 if __name__ == '__main__':
     main()
+
 
 
