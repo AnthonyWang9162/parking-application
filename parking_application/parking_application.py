@@ -43,11 +43,6 @@ def upload_db(source, file_id):
 # 時間/期別相關
 ########################################
 def get_quarter(year, month):
-    """
-    輸入 西元年份 與 月份，傳回
-    new_year, new_quarter
-    其中 quarter = 1~4
-    """
     if 1 <= month <= 3:
         quarter = 2
     elif 4 <= month <= 6:
@@ -62,10 +57,6 @@ def get_quarter(year, month):
     return year, quarter
 
 def previous_quarters(year, quarter):
-    """
-    輸入民國年份與該期別，回傳前兩期(民國年+2位期別)字串
-    """
-    # quarter = 1~4
     if quarter == 1:
         previous1_year, previous1_quarter = year - 1, 4
         previous2_year, previous2_quarter = year - 1, 3
@@ -136,11 +127,8 @@ def submit_application(conn, cursor, unit, name, car_number, employee_id,
                        special_needs, contact_info, previous1, previous2,
                        current, local_db_path, db_file_id):
     """
-    核心邏輯：
-      1. 驗證輸入
-      2. 插入/查詢資料表
-      3. 判斷需不需要補件
-      4. 需要補件就 return True，不需要就 return False
+    若需要補件 => st.session_state['upload_prompt'] = "..." + return True
+    否則 return False
     """
     try:
         # 基本驗證
@@ -168,17 +156,18 @@ def submit_application(conn, cursor, unit, name, car_number, employee_id,
             status = get_pregnant_record_status(cursor, employee_id, previous1, previous2)
 
             if status == 'none':
-                # 需上傳附件
-                #insert_apply(conn, cursor, unit, name, car_number, employee_id,
-                             #special_needs, contact_info, False, current, local_db_path, db_file_id)
-                st.error('您為第一次孕婦申請，請將相關證明文件(如 :孕婦手冊、行照、駕照)補件上傳或電郵至example@taipower.com.tw')
-                text = "您為第一次孕婦申請，請將相關證明文件(如 :孕婦手冊、行照、駕照)電郵回覆或於系統上傳。"
+                # 需要補件
+                st.session_state['upload_prompt'] = (
+                    "您為第一次孕婦申請，請將相關證明文件(如：孕婦手冊、行照、駕照)補件上傳或電郵至example@taipower.com.tw"
+                )
+                text = "您為第一次孕婦申請，請將相關證明文件(如：孕婦手冊、行照、駕照)電郵回覆或於系統上傳。"
                 subject_text = "本期停車補證明文件通知"
                 send_email(employee_id, name, text, subject_text)
-                return True  # <<-- 需要補件
+                return True
 
             elif status == 'only_last_period':
                 if has_approved_car_record(cursor, employee_id, car_number):
+                    # 已有車牌紀錄 => 直接成功
                     insert_apply(conn, cursor, unit, name, car_number, employee_id,
                                  special_needs, contact_info, True, current, local_db_path, db_file_id)
                     insert_parking_fee(conn, cursor, current, employee_id, local_db_path, db_file_id)
@@ -188,14 +177,16 @@ def submit_application(conn, cursor, unit, name, car_number, employee_id,
                     send_email(employee_id, name, text, subject_text)
                     return False
                 else:
-                    # 需上傳附件
+                    # 需要補件
                     insert_apply(conn, cursor, unit, name, car_number, employee_id,
                                  special_needs, contact_info, False, current, local_db_path, db_file_id)
-                    st.error('這輛車為第一次申請，請將相關證明文件補件上傳或電郵至example@taipower.com.tw')
+                    st.session_state['upload_prompt'] = (
+                        "您有孕婦資格，但該車為第一次申請停車，請補相關證明文件上傳或電郵至example@taipower.com.tw"
+                    )
                     text = "您有孕婦資格，但是該車為第一次申請停車，請補相關證明文件。"
                     subject_text = "本期停車補證明文件通知"
                     send_email(employee_id, name, text, subject_text)
-                    return True  # <<-- 需要補件
+                    return True
 
             else:
                 # 已超過孕婦期限 => 轉一般
@@ -208,19 +199,22 @@ def submit_application(conn, cursor, unit, name, car_number, employee_id,
                     send_email(employee_id, name, text, subject_text)
                     return False
                 else:
-                    # 需上傳附件
+                    # 需要補件
                     insert_apply(conn, cursor, unit, name, car_number, employee_id,
                                  '一般', contact_info, False, current, local_db_path, db_file_id)
-                    st.error('您已過孕婦期限，系統自動將您轉為一般身分申請本期停車，且此車為第一次申請，請補件上傳或電郵。')
+                    st.session_state['upload_prompt'] = (
+                        "您已過孕婦申請期限並自動轉為一般身分，且此車為第一次申請。請補相關證明文件上傳或電郵。"
+                    )
                     text = "您已經過了孕婦申請期限，但該車為第一次申請停車，請補相關證明文件。"
                     subject_text = "本期停車補證明文件通知"
                     send_email(employee_id, name, text, subject_text)
-                    return True  # <<-- 需要補件
+                    return True
 
         elif special_needs == '身心障礙':
-            # 是否已有身心障礙申請紀錄
-            cursor.execute("SELECT * FROM 申請紀錄 WHERE 姓名代號 = ? AND 身分註記 = ?",
-                           (employee_id, '身心障礙'))
+            cursor.execute(
+                "SELECT * FROM 申請紀錄 WHERE 姓名代號 = ? AND 身分註記 = ?",
+                (employee_id, '身心障礙')
+            )
             disable_data = cursor.fetchone()
             if disable_data:
                 if has_approved_car_record(cursor, employee_id, car_number):
@@ -233,19 +227,23 @@ def submit_application(conn, cursor, unit, name, car_number, employee_id,
                     send_email(employee_id, name, text, subject_text)
                     return False
                 else:
-                    # 需上傳附件
+                    # 需要補件
                     insert_apply(conn, cursor, unit, name, car_number, employee_id,
                                  special_needs, contact_info, False, current, local_db_path, db_file_id)
-                    st.error('這輛車為第一次申請，請將相關證明文件補件上傳或電郵至example@taipower.com.tw')
+                    st.session_state['upload_prompt'] = (
+                        "您有身心障礙資格，但此車為第一次申請停車，請補相關證明文件上傳或電郵。"
+                    )
                     text = "您有身心障礙資格，但是該車為第一次申請停車，請補相關證明文件。"
                     subject_text = "本期停車補證明文件通知"
                     send_email(employee_id, name, text, subject_text)
                     return True
             else:
-                # 需上傳附件
+                # 需要補件
                 insert_apply(conn, cursor, unit, name, car_number, employee_id,
                              special_needs, contact_info, False, current, local_db_path, db_file_id)
-                st.error('您為第一次身心障礙申請，請將身心障礙證明、行照、駕照等補件上傳或電郵!')
+                st.session_state['upload_prompt'] = (
+                    "您為第一次身心障礙申請，請將身心障礙證明、行照、駕照等文件上傳或電郵!"
+                )
                 text = "您為第一次身心障礙申請，請將相關證明文件補件上傳或電郵。"
                 subject_text = "本期停車補證明文件通知"
                 send_email(employee_id, name, text, subject_text)
@@ -282,11 +280,13 @@ def submit_application(conn, cursor, unit, name, car_number, employee_id,
                         send_email(employee_id, name, text, subject_text)
                         return False
                     else:
-                        # 需上傳附件
+                        # 需要補件
                         insert_apply(conn, cursor, unit, name, car_number, employee_id,
                                      '保障', contact_info, False, current, local_db_path, db_file_id)
-                        st.error('您前兩期都未中籤，本期獲得保障資格，但此車為第一次申請，請補件上傳或電郵。')
-                        text = "您連續兩期都有申請停車，且都未中籤；本期獲得保障車位，但該車為第一次申請。請補證明文件。"
+                        st.session_state['upload_prompt'] = (
+                            "您前兩期都未中籤，本期獲得保障資格，但此車為第一次申請，請補相關證明文件上傳或電郵。"
+                        )
+                        text = "您連續兩期都有申請且都未中籤；本期獲得保障車位，但該車為第一次申請。請補證明文件。"
                         subject_text = "本期停車抽籤申請補證明文件通知"
                         send_email(employee_id, name, text, subject_text)
                         return True
@@ -304,10 +304,12 @@ def submit_application(conn, cursor, unit, name, car_number, employee_id,
                             send_email(employee_id, name, text, subject_text)
                             return False
                         else:
-                            # 需上傳附件
+                            # 需要補件
                             insert_apply(conn, cursor, unit, name, car_number, employee_id,
                                          '孕婦', contact_info, False, current, local_db_path, db_file_id)
-                            st.error('您上期孕婦資格成功，但此車為第一次申請，請補件上傳或電郵。')
+                            st.session_state['upload_prompt'] = (
+                                "您上期孕婦申請成功，但此車為第一次申請停車，請補件上傳或電郵。"
+                            )
                             text = "您上期孕婦申請成功，但該車為第一次申請，請補證明文件。"
                             subject_text = "本期停車抽籤申請補證明文件通知"
                             send_email(employee_id, name, text, subject_text)
@@ -323,10 +325,12 @@ def submit_application(conn, cursor, unit, name, car_number, employee_id,
                             send_email(employee_id, name, text, subject_text)
                             return False
                         else:
-                            # 需上傳附件
+                            # 需要補件
                             insert_apply(conn, cursor, unit, name, car_number, employee_id,
                                          special_needs, contact_info, False, current, local_db_path, db_file_id)
-                            st.error('此輛車為第一次申請，請補件上傳或電郵!')
+                            st.session_state['upload_prompt'] = (
+                                "此輛車為第一次申請，請補相關證明文件上傳或電郵!"
+                            )
                             text = "您為第一次申請停車位，請將相關證明文件補件上傳或電郵。"
                             subject_text = "本期停車抽籤申請補證明文件通知"
                             send_email(employee_id, name, text, subject_text)
@@ -408,15 +412,11 @@ def get_pregnant_record_status(cursor, employee_id, last_period, before_last_per
         return "only_before_last_period"
     else:
         return "none"
-        
+
 ########################################
 # 創資料夾放附件
 ########################################
 def get_or_create_subfolder(service, parent_folder_id, subfolder_name):
-    """
-    在 parent_folder_id 底下檢查是否有名稱為 subfolder_name 的資料夾，
-    如果有就回傳它的 ID，否則建立新的資料夾後回傳 ID。
-    """
     query = (
         f"name = '{subfolder_name}' "
         f"and '{parent_folder_id}' in parents "
@@ -425,12 +425,9 @@ def get_or_create_subfolder(service, parent_folder_id, subfolder_name):
     )
     response = service.files().list(q=query, spaces='drive', fields='files(id, name)').execute()
     subfolders = response.get('files', [])
-
-    # 如果已經存在同名資料夾，直接回傳其ID
     if subfolders:
         return subfolders[0]['id']
     else:
-        # 否則，建立一個新的資料夾
         folder_metadata = {
             'name': subfolder_name,
             'mimeType': 'application/vnd.google-apps.folder',
@@ -467,11 +464,14 @@ def main():
         subfolder_id = get_or_create_subfolder(service, drive_folder_id, title)
         st.session_state['subfolder_id'] = subfolder_id
 
+    # 初始化 need_upload / upload_prompt
     if 'need_upload' not in st.session_state:
         st.session_state['need_upload'] = False
+    if 'upload_prompt' not in st.session_state:
+        st.session_state['upload_prompt'] = ""
 
+    # 第一階段：主要表單
     if not st.session_state['need_upload']:
-        # ---- 第一階段：主要表單 ----
         with st.form(key='application_form'):
             unit = st.selectbox('(1)請問您所屬單位?', ['秘書處', '公眾服務處'])
             name = st.text_input('(2)請問您的大名?')
@@ -498,8 +498,12 @@ def main():
                     st.session_state['name'] = name
                     st.experimental_rerun()
 
+    # 第二階段：附件上傳
     else:
-        # ---- 第二階段：附件上傳 ----
+        # ★ 在附件上傳頁面最上方顯示之前的補件訊息
+        if st.session_state['upload_prompt']:
+            st.error(st.session_state['upload_prompt'])
+
         st.warning('請上傳相關證明文件（可一次上傳多檔）：')
         uploaded_files = st.file_uploader(
             "上傳附件檔案（可多選）", 
@@ -516,14 +520,11 @@ def main():
                         filename += f"_{idx}"
                     filename += f".{file_ext}"
 
-                    # 這裡指定子資料夾ID
                     file_metadata = {
                         'name': filename,
                         'parents': [st.session_state['subfolder_id']]
                     }
-                    # 建議關閉resumable
                     media = MediaIoBaseUpload(uploaded_file, mimetype=uploaded_file.type, resumable=False)
-
                     service.files().create(
                         body=file_metadata,
                         media_body=media,
@@ -532,11 +533,15 @@ def main():
 
                 st.success("所有附件已成功上傳到 " + title + " 子資料夾！")
                 st.balloons()
+
+                # 上傳完後，重置狀態並清除提示
                 st.session_state['need_upload'] = False
+                st.session_state['upload_prompt'] = ""
 
     cursor.close()
     conn.close()
 
 if __name__ == '__main__':
     main()
+
 
