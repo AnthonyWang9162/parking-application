@@ -526,7 +526,7 @@ def main():
                 )
                 car_number_prefix = st.text_input("(3-1) 車號前半段（- 前）").upper()
                 car_number_suffix = st.text_input("(3-2) 車號後半段（- 後）").upper()
-        
+            car_number = car_number_prefix + car_number_suffix
             employee_id = st.text_input('(4)員工編號(不+U)')
             special_needs = st.selectbox('(5)是否有特殊需求？', ['一般', '孕婦', '身心障礙'])
             contact_info = st.text_input('(6)您的公務聯絡方式?')
