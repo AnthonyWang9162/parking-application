@@ -522,12 +522,10 @@ def main():
             # 用st.container()建立框線區塊
             with st.container(border=True):
                 st.markdown(
-                    "<p style='color:#555'><strong>備註：</strong>請將車號分成前後半段填寫 "
-                    "(如：ABC-1234，就拆成前半段 ABC，後半段 1234)</p>",
-                    unsafe_allow_html=True
+                    "請將車號分成前後半段填寫(如：ABC-1234，就拆成前半段 ABC，後半段 1234)",
                 )
-                car_number_prefix = st.text_input("(3-1) 車牌前半段（'-' 前）").upper()
-                car_number_suffix = st.text_input("(3-2) 車牌後半段（'-' 後）").upper()
+                car_number_prefix = st.text_input("(3-1) 車號前半段（- 前）").upper()
+                car_number_suffix = st.text_input("(3-2) 車號後半段（- 後）").upper()
         
             employee_id = st.text_input('(4)員工編號(不+U)')
             special_needs = st.selectbox('(5)是否有特殊需求？', ['一般', '孕婦', '身心障礙'])
