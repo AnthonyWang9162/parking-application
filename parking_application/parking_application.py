@@ -547,9 +547,6 @@ def main():
                     if need_upload:
                         # 表示需要上傳附件 => 進入第二階段
                         st.session_state['need_upload'] = True
-                        st.session_state['upload_prompt'] = (
-                            "請上傳相關證明文件（可一次上傳多檔），再按下確認完成申請。"
-                        )
                         st.experimental_rerun()
 
     # ============= 第二階段：上傳附件 + 真正寫入資料庫 + 寄信 =============
