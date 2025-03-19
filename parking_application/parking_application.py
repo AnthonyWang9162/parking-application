@@ -556,7 +556,7 @@ def main():
     else:
         # 第二階段：上傳附件 & 提示訊息
         pending = st.session_state.get('pending_insert', {})
-        upload_prompt = pending.get('upload_prompt', "請上傳相關證明文件（可一次上傳多檔），再按下確認完成申請。")
+        upload_prompt = pending.get('upload_prompt')
         
         st.warning(upload_prompt)
     
