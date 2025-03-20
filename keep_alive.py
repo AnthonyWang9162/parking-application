@@ -23,7 +23,6 @@ try:
     # 以下為模擬用戶互動的範例（點擊某按鈕或畫面任意處）
     # 若無特殊需求，可省略模擬點擊動作
     ActionChains(driver).move_by_offset(10, 10).click().perform()
-k
     print("Successfully visited and clicked!")
     
 except Exception as e:
